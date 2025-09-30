@@ -202,27 +202,6 @@
                 max-height: 250px;
             }
         }
-
-        /* Answer input styling */
-        #answer-input {
-            width: 80px;
-            text-align: center;
-            font-size: 1.2rem;
-            padding: 4px;
-            border: 2px solid #d1d5db;
-            border-radius: 8px;
-        }
-        #answer-input.correct {
-            border-color: #22c55e;
-            background-color: #4ade80;
-            color: white;
-        }
-        #answer-input.incorrect {
-            border-color: #ef4444;
-            background-color: #f87171;
-            color: white;
-            animation: shake 0.5s;
-        }
     </style>
 </head>
 <body class="bg-blue-100 flex flex-col items-center justify-center min-h-screen p-1">
@@ -249,13 +228,6 @@
                 <label for="to-table" class="text-gray-700">To</label>
                 <input type="number" id="to-table" class="w-20 text-center text-lg py-1 px-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500">
             </div>
-        </div>
-        <div class="flex items-center justify-center gap-3 my-4">
-            <span class="text-gray-700">Answer Mode</span>
-            <button id="answer-mode-btn" class="w-14 h-7 flex items-center bg-green-400 rounded-full p-1 duration-300 ease-in-out">
-                <div id="answer-mode-dot" class="w-5 h-5 bg-white rounded-full shadow-md transform translate-x-7 duration-300 ease-in-out"></div>
-            </button>
-            <span id="answer-mode-text" class="text-gray-700">Multiple Choice</span>
         </div>
         <div class="flex items-center justify-center gap-3 my-4">
             <span class="text-gray-700">Sound</span>
@@ -295,7 +267,6 @@
                     <div class="absolute w-full h-full card-face bg-white rounded-2xl shadow-xl flex flex-col items-center justify-center p-2 text-center">
                         <p class="text-4xl fredoka text-gray-800" id="problem"></p>
                         <div id="answer-options" class="mt-2 grid grid-cols-2 gap-2 w-full"></div>
-                        <input id="answer-input" type="text" maxlength="3" class="hidden mt-2" placeholder="Type answer">
                     </div>
                     <div id="card-back-face" class="absolute w-full h-full card-face card-face-back bg-red-400 rounded-2xl shadow-xl flex flex-col items-center justify-center p-4 text-center transition-colors duration-300">
                         <div id="result-display" class="text-white"></div>
@@ -341,15 +312,11 @@
         const startGameBtn = document.getElementById('start-game-btn');
         const soundToggleBtn = document.getElementById('sound-toggle-btn');
         const soundToggleDot = document.getElementById('sound-toggle-dot');
-        const answerModeBtn = document.getElementById('answer-mode-btn');
-        const answerModeDot = document.getElementById('answer-mode-dot');
-        const answerModeText = document.getElementById('answer-mode-text');
         const gameContainerEl = document.getElementById('game-container');
 
         // Game Elements
         const problemEl = document.getElementById('problem');
         const answerOptionsEl = document.getElementById('answer-options');
-        const answerInputEl = document.getElementById('answer-input');
         const cardEl = document.getElementById('card');
         const cardBackFaceEl = document.getElementById('card-back-face');
         const resultDisplayEl = document.getElementById('result-display');
@@ -371,7 +338,6 @@
         const wrongCountEl = document.getElementById('wrong-count');
 
         let isSoundOn = true, audioStarted = false;
-        let isMultipleChoice = true;
         let currentProblem, correctAnswer, activeProblemKey = null;
         let allProblemsForRound = [], problemsToDo = [], problemsGottenWrongInRound = [];
         let allTimeWrongProblems = new Set();
@@ -535,16 +501,7 @@
                 problemTag.scrollIntoView({ behavior: "smooth", block: "center" });
             }
             
-            if (isMultipleChoice) {
-                answerOptionsEl.classList.remove('hidden');
-                answerInputEl.classList.add('hidden');
-                generateChoices();
-            } else {
-                answerOptionsEl.classList.add('hidden');
-                answerInputEl.classList.remove('hidden');
-                answerInputEl.value = '';
-                answerInputEl.focus();
-            }
+            generateChoices();
         }
 
         function generateChoices() {
@@ -582,10 +539,10 @@
             });
         }
 
-        async function checkAnswer(userAnswer, element) {
+        async function checkAnswer(userAnswer, button) {
             if (isSoundOn && !audioStarted) { await Tone.start(); audioStarted = true; }
             totalAttempts++;
-            const isCorrect = parseInt(userAnswer) === correctAnswer;
+            const isCorrect = userAnswer === correctAnswer;
             const problemKey = `${currentProblem[0]}x${currentProblem[1]}`;
             const problemTag = document.getElementById(`tag-${problemKey}`);
 
@@ -599,15 +556,6 @@
                 problemTag.scrollIntoView({ behavior: "smooth", block: "center" });
                 
                 updateProgressCount();
-                
-                if (!isMultipleChoice) {
-                    element.classList.add('correct');
-                    element.disabled = true;
-                } else {
-                    const buttons = answerOptionsEl.querySelectorAll('button');
-                    buttons.forEach(btn => btn.disabled = true);
-                    element.classList.add('correct');
-                }
                 
                 setTimeout(() => {
                     triggerTagExplosion(problemTag);
@@ -624,16 +572,11 @@
                 setTimeout(nextQuestion, 1000);
 
             } else {
+                const buttons = answerOptionsEl.querySelectorAll('button');
+                buttons.forEach(btn => btn.disabled = true);
                 playIncorrectSound();
-                if (isMultipleChoice) {
-                    const buttons = answerOptionsEl.querySelectorAll('button');
-                    buttons.forEach(btn => btn.disabled = true);
-                    element.classList.add('incorrect');
-                    buttons.forEach(btn => { if (parseInt(btn.textContent) === correctAnswer) btn.classList.add('correct'); });
-                } else {
-                    element.classList.add('incorrect');
-                    element.disabled = true;
-                }
+                button.classList.add('incorrect');
+                buttons.forEach(btn => { if (parseInt(btn.textContent) === correctAnswer) btn.classList.add('correct'); });
                 
                 problemTag.parentNode.removeChild(problemTag);
                 wrongAttempts[problemKey] = (wrongAttempts[problemKey] || 0) + 1;
@@ -715,31 +658,6 @@
                 soundToggleBtn.classList.add('bg-gray-300');
                 soundToggleBtn.classList.remove('bg-green-400');
                 soundToggleDot.style.transform = 'translateX(0)';
-            }
-        });
-
-        answerModeBtn.addEventListener('click', () => {
-            isMultipleChoice = !isMultipleChoice;
-            if (isMultipleChoice) {
-                answerModeBtn.classList.remove('bg-gray-300');
-                answerModeBtn.classList.add('bg-green-400');
-                answerModeDot.style.transform = 'translateX(1.75rem)';
-                answerModeText.textContent = 'Multiple Choice';
-            } else {
-                answerModeBtn.classList.add('bg-gray-300');
-                answerModeBtn.classList.remove('bg-green-400');
-                answerModeDot.style.transform = 'translateX(0)';
-                answerModeText.textContent = 'Type Answer';
-            }
-        });
-
-        answerInputEl.addEventListener('input', (e) => {
-            e.target.value = e.target.value.replace(/[^0-9]/g, '');
-            if (e.target.value.length > 3) {
-                e.target.value = e.target.value.slice(0, 3);
-            }
-            if (e.target.value) {
-                checkAnswer(parseInt(e.target.value), e.target);
             }
         });
 
