@@ -330,14 +330,22 @@
             }
         }
         function handleStartSetup() {
-            const from = parseInt(fromTableInput.value || 1);
-            const to = parseInt(toTableInput.value || 12);
+            const fromValue = fromTableInput.value.trim();
+            const toValue = toTableInput.value.trim();
             let error = "";
-            if (isNaN(from) || isNaN(to)) error = "Please enter numbers.";
-            else if (from < 1 || to < 1 || from > 12 || to > 12) error = "Numbers must be between 1 and 12.";
-            else if (from > to) error = "'From' must be smaller than 'To'.";
+            if (!fromValue || !toValue) {
+                error = "Please input numbers from 1 to 12.";
+            } else {
+                const from = parseInt(fromValue);
+                const to = parseInt(toValue);
+                if (isNaN(from) || isNaN(to)) error = "Please enter numbers.";
+                else if (from < 1 || to < 1 || from > 12 || to > 12) error = "Numbers must be between 1 and 12.";
+                else if (from > to) error = "'From' must be smaller than 'To'.";
+            }
             setupErrorEl.textContent = error;
             if (error) return;
+            const from = parseInt(fromValue);
+            const to = parseInt(toValue);
             let problems = [];
             for (let i = from; i <= to; i++) { for (let j = 1; j <= 10; j++) { problems.push([i, j]); } }
             initialProblemSet = [...problems];
@@ -487,6 +495,9 @@
             const problemKey = `${currentProblem[0]}x${currentProblem[1]}`;
             const problemTag = document.getElementById(`tag-${problemKey}`);
             problemTag.classList.remove('is-current-question');
+            button.classList.add(isCorrect ? 'correct' : 'incorrect');
+            const buttons = answerOptionsEl.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
             if (isCorrect) {
                 playCorrectSound();
                 problemsToDo = problemsToDo.filter(p => !(p[0] === currentProblem[0] && p[1] === currentProblem[1]));
@@ -506,11 +517,7 @@
                 }, 200);
                 setTimeout(nextQuestion, 1000);
             } else {
-                const buttons = answerOptionsEl.querySelectorAll('button');
-                buttons.forEach(btn => btn.disabled = true);
                 playIncorrectSound();
-                button.classList.add('incorrect');
-                buttons.forEach(btn => { if (parseInt(btn.textContent) === correctAnswer) btn.classList.add('correct'); });
                 problemTag.parentNode.removeChild(problemTag);
                 wrongAttempts[problemKey] = (wrongAttempts[problemKey] || 0) + 1;
                 allTimeWrongProblems.add(problemKey);
