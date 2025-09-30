@@ -12,12 +12,10 @@
             font-family: 'Inter', sans-serif;
             touch-action: manipulation;
             overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
             margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #bfdbfe;
         }
         .fredoka {
             font-family: 'Fredoka One', cursive;
@@ -81,31 +79,33 @@
             margin-left: 2px;
             opacity: 0.8;
         }
+        /* Current question pulse */
         .is-current-question {
             animation: pulse-rainbow 2.5s infinite ease-in-out;
         }
         @keyframes pulse-rainbow {
-            0%, 100% {
-                transform: scale(1.0);
+            0%, 100% { 
+                transform: scale(1.0); 
                 box-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
-                background-color: #ef4444;
+                background-color: #ef4444; /* red-500 */
             }
-            25% {
-                transform: scale(1.1);
+            25% { 
+                transform: scale(1.1); 
                 box-shadow: 0 0 15px rgba(251, 146, 60, 0.8);
-                background-color: #f97316;
+                background-color: #f97316; /* orange-500 */
             }
-            50% {
-                transform: scale(1.0);
+            50% { 
+                transform: scale(1.0); 
                 box-shadow: 0 0 12px rgba(59, 130, 246, 0.7);
-                background-color: #3b82f6;
+                background-color: #3b82f6; /* blue-500 */
             }
-            75% {
-                transform: scale(1.1);
+            75% { 
+                transform: scale(1.1); 
                 box-shadow: 0 0 15px rgba(34, 197, 94, 0.8);
-                background-color: #22c55e;
+                background-color: #22c55e; /* green-500 */
             }
         }
+        /* Fireworks & Explosions */
         .particle {
             position: fixed;
             border-radius: 50%;
@@ -124,6 +124,8 @@
         @keyframes tag-explode {
             from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: var(--transform-to); }
         }
+
+        /* Custom scrollbar for progress lists */
         .scrollable-list::-webkit-scrollbar {
             width: 4px;
             height: 4px;
@@ -132,6 +134,8 @@
             background-color: rgba(0,0,0,0.2);
             border-radius: 4px;
         }
+
+        /* Orientation Lock */
         @media (orientation: landscape) and (max-height: 500px) {
             #setup-modal, #game-container, #win-modal, #practice-modal {
                 display: none !important;
@@ -140,46 +144,49 @@
                 display: flex;
             }
         }
-        input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
+
+        /* Remove number input arrows */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
         }
         input[type=number] {
             -moz-appearance: textfield;
         }
+
+        /* Responsive adjustments */
         #game-container {
+            max-width: 100vw;
             width: 100%;
-            max-width: 390px; /* iPhone 14 width */
-            height: 100vh;
             padding: 0 5px;
-            display: flex;
-            flex-direction: column;
         }
         .card-container {
-            height: 30vh;
-            max-height: 200px;
+            height: 30vh; /* Reduced height to avoid browser nav bar */
+            max-height: 200px; /* Cap height for smaller screens */
             perspective: 1000px;
         }
         .card-face {
-            padding: 2px;
+            padding: 2px; /* Reduced padding to use white space */
         }
         #problem {
-            font-size: 4rem;
+            font-size: 4rem; /* Slightly smaller font for better fit */
         }
         #answer-options {
-            gap: 2px;
+            gap: 2px; /* Tighter spacing for buttons */
         }
         .answer-btn {
-            font-size: 1rem;
+            font-size: 1rem; /* Smaller font for buttons */
             padding: 4px;
         }
+
+        /* Media queries for different devices */
         @media (max-width: 768px) {
             #game-container {
                 padding: 0 2px;
             }
             .card-container {
-                height: 25vh;
+                height: 25vh; /* Further reduce for smaller screens */
                 max-height: 180px;
             }
             #problem {
@@ -191,26 +198,36 @@
         }
         @media (orientation: landscape) {
             .card-container {
-                height: 35vh;
+                height: 35vh; /* Slightly taller in landscape */
                 max-height: 250px;
             }
         }
-        @media (min-width: 769px) {
-            body {
-                background-color: #e5e7eb; /* Gray background for desktop */
-            }
-            #game-container {
-                height: 90vh; /* Slightly less than full height for padding */
-                max-height: 844px; /* iPhone 14 height */
-                border: 2px solid #1e40af; /* Optional: visual border for desktop */
-                border-radius: 16px;
-                box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-                overflow: hidden;
-            }
+
+        /* Answer input styling */
+        #answer-input {
+            width: 80px;
+            text-align: center;
+            font-size: 1.2rem;
+            padding: 4px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+        }
+        #answer-input.correct {
+            border-color: #22c55e;
+            background-color: #4ade80;
+            color: white;
+        }
+        #answer-input.incorrect {
+            border-color: #ef4444;
+            background-color: #f87171;
+            color: white;
+            animation: shake 0.5s;
         }
     </style>
 </head>
-<body>
+<body class="bg-blue-100 flex flex-col items-center justify-center min-h-screen p-1">
+
+    <!-- Orientation Lock Screen -->
     <div id="orientation-lock" class="hidden fixed inset-0 bg-blue-100 z-50 flex-col items-center justify-center text-center p-4">
         <svg class="w-16 h-16 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
@@ -218,6 +235,8 @@
         <h2 class="text-2xl fredoka text-blue-800 mt-4">Please rotate your device</h2>
         <p class="text-blue-600 mt-2">This game is best played in portrait mode.</p>
     </div>
+
+    <!-- Setup Modal -->
     <div id="setup-modal" class="modal-enter bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 text-center max-w-sm w-full z-20">
         <h2 class="text-3xl fredoka text-blue-800">Choose Your Tables!</h2>
         <p class="text-gray-600 mt-2">Practice any tables from 1 to 12.</p>
@@ -232,6 +251,13 @@
             </div>
         </div>
         <div class="flex items-center justify-center gap-3 my-4">
+            <span class="text-gray-700">Answer Mode</span>
+            <button id="answer-mode-btn" class="w-14 h-7 flex items-center bg-green-400 rounded-full p-1 duration-300 ease-in-out">
+                <div id="answer-mode-dot" class="w-5 h-5 bg-white rounded-full shadow-md transform translate-x-7 duration-300 ease-in-out"></div>
+            </button>
+            <span id="answer-mode-text" class="text-gray-700">Multiple Choice</span>
+        </div>
+        <div class="flex items-center justify-center gap-3 my-4">
             <span class="text-gray-700">Sound</span>
             <button id="sound-toggle-btn" class="w-14 h-7 flex items-center bg-green-400 rounded-full p-1 duration-300 ease-in-out">
                 <div id="sound-toggle-dot" class="w-5 h-5 bg-white rounded-full shadow-md transform translate-x-7 duration-300 ease-in-out"></div>
@@ -240,7 +266,9 @@
         <p id="setup-error" class="text-red-500 h-5 mb-2"></p>
         <button id="start-game-btn" class="w-full bg-blue-500 text-white py-3 px-8 rounded-full text-2xl fredoka hover:bg-blue-600 active:scale-95 transition-transform shadow-lg">Start</button>
     </div>
-    <div id="game-container" class="max-w-md mx-auto flex flex-col h-full hidden">
+
+    <!-- Main Game -->
+    <div id="game-container" class="w-full max-w-md mx-auto flex flex-col h-full hidden">
         <div class="text-center flex-shrink-0">
             <h1 class="text-2xl md:text-3xl fredoka text-blue-800">Multiplication Mastery</h1>
             <div class="flex items-center justify-center gap-4">
@@ -248,20 +276,26 @@
                 <button id="restart-btn" class="bg-red-500 text-white py-1 px-3 rounded-full text-xs hover:bg-red-600 active:scale-95 transition-transform shadow-md">Restart</button>
             </div>
         </div>
+        
         <div class="flex-grow flex flex-col gap-2 min-h-0 my-1">
+            <!-- Progress Tracker -->
             <div class="bg-white/70 backdrop-blur-sm rounded-xl p-2 shadow-md flex flex-col" style="height: 40%;">
                 <h2 class="text-xs text-center text-gray-700 mb-1 flex-shrink-0">PROGRESS (<span id="progress-count">0/0</span>)</h2>
                 <div id="progress-container" class="scrollable-list overflow-y-auto flex-grow flex flex-wrap gap-1 justify-center content-start p-1"></div>
             </div>
-            <div id="wrong-container" class="bg-white/70 backdrop-blur-sm rounded-xl p-2 shadow-md flex flex-col" style="height: 20%;">
+            <!-- Wrong Tracker -->
+             <div id="wrong-container" class="bg-white/70 backdrop-blur-sm rounded-xl p-2 shadow-md flex flex-col" style="height: 20%;">
                 <h2 class="text-xs text-center text-orange-700 mb-1 flex-shrink-0">NEEDS PRACTICE (<span id="wrong-count">0</span>)</h2>
                 <div id="wrong-list" class="scrollable-list overflow-y-auto flex-grow flex flex-wrap gap-1 justify-center content-start p-1"></div>
             </div>
+            
+            <!-- Card -->
             <div class="min-h-0 card-container">
                 <div id="card" class="relative w-full card">
                     <div class="absolute w-full h-full card-face bg-white rounded-2xl shadow-xl flex flex-col items-center justify-center p-2 text-center">
                         <p class="text-4xl fredoka text-gray-800" id="problem"></p>
                         <div id="answer-options" class="mt-2 grid grid-cols-2 gap-2 w-full"></div>
+                        <input id="answer-input" type="text" maxlength="3" class="hidden mt-2" placeholder="Type answer">
                     </div>
                     <div id="card-back-face" class="absolute w-full h-full card-face card-face-back bg-red-400 rounded-2xl shadow-xl flex flex-col items-center justify-center p-4 text-center transition-colors duration-300">
                         <div id="result-display" class="text-white"></div>
@@ -271,6 +305,8 @@
             </div>
         </div>
     </div>
+
+    <!-- Practice Modal -->
     <div id="practice-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="modal-enter bg-white rounded-2xl shadow-2xl p-8 text-center max-w-sm w-full relative">
             <div id="practice-fireworks-container" class="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl"></div>
@@ -282,6 +318,8 @@
             </div>
         </div>
     </div>
+    
+    <!-- Win Modal -->
     <div id="win-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="modal-enter bg-white rounded-2xl shadow-2xl p-8 text-center max-w-sm w-full relative">
             <div id="fireworks-container" class="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl"></div>
@@ -293,7 +331,9 @@
             </div>
         </div>
     </div>
+
     <script>
+        // Setup Elements
         const setupModalEl = document.getElementById('setup-modal');
         const fromTableInput = document.getElementById('from-table');
         const toTableInput = document.getElementById('to-table');
@@ -301,12 +341,19 @@
         const startGameBtn = document.getElementById('start-game-btn');
         const soundToggleBtn = document.getElementById('sound-toggle-btn');
         const soundToggleDot = document.getElementById('sound-toggle-dot');
+        const answerModeBtn = document.getElementById('answer-mode-btn');
+        const answerModeDot = document.getElementById('answer-mode-dot');
+        const answerModeText = document.getElementById('answer-mode-text');
         const gameContainerEl = document.getElementById('game-container');
+
+        // Game Elements
         const problemEl = document.getElementById('problem');
         const answerOptionsEl = document.getElementById('answer-options');
+        const answerInputEl = document.getElementById('answer-input');
         const cardEl = document.getElementById('card');
         const cardBackFaceEl = document.getElementById('card-back-face');
         const resultDisplayEl = document.getElementById('result-display');
+        
         const winModalEl = document.getElementById('win-modal');
         const playAgainBtn = document.getElementById('play-again-btn');
         const practiceModalEl = document.getElementById('practice-modal');
@@ -316,12 +363,15 @@
         const clockEl = document.getElementById('clock');
         const fireworksContainer = document.getElementById('fireworks-container');
         const practiceFireworksContainer = document.getElementById('practice-fireworks-container');
+        
         const progressContainer = document.getElementById('progress-container');
         const progressCountEl = document.getElementById('progress-count');
         const wrongContainer = document.getElementById('wrong-container');
         const wrongListEl = document.getElementById('wrong-list');
         const wrongCountEl = document.getElementById('wrong-count');
+
         let isSoundOn = true, audioStarted = false;
+        let isMultipleChoice = true;
         let currentProblem, correctAnswer, activeProblemKey = null;
         let allProblemsForRound = [], problemsToDo = [], problemsGottenWrongInRound = [];
         let allTimeWrongProblems = new Set();
@@ -329,9 +379,12 @@
         let totalAttempts = 0;
         let timerInterval = null, startTime = 0;
         let initialProblemSet = [];
+
+        // --- Sound Effects ---
         const correctSynth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } }).toDestination();
         const incorrectSynth = new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.5 }, volume: -10 }).toDestination();
         const fanfareSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fatsawtooth' }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.4 } }).toDestination();
+
         function playCorrectSound() { if(isSoundOn) { correctSynth.triggerAttackRelease('C5', '8n', Tone.now()); correctSynth.triggerAttackRelease('G5', '8n', Tone.now() + 0.1); } }
         function playIncorrectSound() { if(isSoundOn) { incorrectSynth.triggerAttackRelease('F#3', '8n'); } }
         function playFanfare(isBig = false) {
@@ -346,27 +399,34 @@
                 fanfareSynth.triggerAttackRelease(['G5', 'B5', 'D6', 'G6'], '4n', now + 1.0);
             }
         }
+
         function handleStartSetup() {
             const from = parseInt(fromTableInput.value || 1);
             const to = parseInt(toTableInput.value || 12);
             let error = "";
+
             if (isNaN(from) || isNaN(to)) error = "Please enter numbers.";
             else if (from < 1 || to < 1 || from > 12 || to > 12) error = "Numbers must be between 1 and 12.";
             else if (from > to) error = "'From' must be smaller than 'To'.";
+            
             setupErrorEl.textContent = error;
             if (error) return;
+
             let problems = [];
             for (let i = from; i <= to; i++) { for (let j = 1; j <= 10; j++) { problems.push([i, j]); } }
+            
             initialProblemSet = [...problems];
             setupModalEl.classList.add('hidden');
             gameContainerEl.classList.remove('hidden');
             gameContainerEl.classList.add('flex');
             initializeRound(problems, true);
         }
+        
         function initializeRound(problems, isFirstRound = false) {
             allProblemsForRound = problems.sort((a,b) => (a[0] * 100 + a[1]) - (b[0] * 100 + b[1]));
             problemsToDo = [...allProblemsForRound];
             problemsGottenWrongInRound = [];
+            
             if (isFirstRound) {
                 allTimeWrongProblems.clear();
                 wrongAttempts = {};
@@ -376,24 +436,29 @@
                 allTimeWrongProblems.clear();
                 renderPracticeRoundProgressList();
             }
+            
             winModalEl.classList.add('hidden');
             practiceModalEl.classList.add('hidden');
+            
             if (isFirstRound) {
                 if (timerInterval) clearInterval(timerInterval);
                 startTime = Date.now();
                 timerInterval = setInterval(updateClock, 1000);
             }
             updateClock();
+            
             updateProgressCount();
             renderWrongList();
             generateProblem();
         }
+
         function updateClock() {
             const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
             const minutes = String(Math.floor(elapsedTime / 60)).padStart(2, '0');
             const seconds = String(elapsedTime % 60).padStart(2, '0');
             clockEl.textContent = `${minutes}:${seconds}`;
         }
+
         function renderFullProgressList() {
             progressContainer.innerHTML = '';
             initialProblemSet.forEach(p => {
@@ -405,6 +470,7 @@
                 progressContainer.appendChild(tag);
             });
         }
+        
         function renderPracticeRoundProgressList() {
             progressContainer.innerHTML = '';
             allProblemsForRound.forEach(p => {
@@ -416,6 +482,7 @@
                 progressContainer.appendChild(tag);
             });
         }
+        
         function renderWrongList() {
             const wrongProblemsArray = Array.from(allTimeWrongProblems).map(key => {
                  const parts = key.split('x');
@@ -423,6 +490,7 @@
             });
             wrongCountEl.textContent = wrongProblemsArray.length;
             wrongListEl.innerHTML = '';
+            
             wrongProblemsArray.sort((a,b) => (a[0] * 100 + a[1]) - (b[0] * 100 + b[1])).forEach(p => {
                 const key = `${p[0]}x${p[1]}`;
                 const tag = document.createElement('div');
@@ -432,11 +500,14 @@
                 wrongListEl.appendChild(tag);
             });
         }
+        
         function updateProgressCount() {
             progressCountEl.textContent = `${initialProblemSet.length - allTimeWrongProblems.size}/${initialProblemSet.length}`;
         }
+        
         function generateProblem() {
             if (activeProblemKey) { document.getElementById(`tag-${activeProblemKey}`)?.classList.remove('is-current-question'); }
+
             if (problemsToDo.length === 0) {
                 if (problemsGottenWrongInRound.length > 0) {
                     practiceModalEl.classList.remove('hidden');
@@ -457,13 +528,25 @@
             correctAnswer = num1 * num2;
             activeProblemKey = `${num1}x${num2}`;
             problemEl.textContent = activeProblemKey;
+            
             const problemTag = document.getElementById(`tag-${activeProblemKey}`);
             if (problemTag) {
                 problemTag.classList.add('is-current-question');
                 problemTag.scrollIntoView({ behavior: "smooth", block: "center" });
             }
-            generateChoices();
+            
+            if (isMultipleChoice) {
+                answerOptionsEl.classList.remove('hidden');
+                answerInputEl.classList.add('hidden');
+                generateChoices();
+            } else {
+                answerOptionsEl.classList.add('hidden');
+                answerInputEl.classList.remove('hidden');
+                answerInputEl.value = '';
+                answerInputEl.focus();
+            }
         }
+
         function generateChoices() {
             let choices = new Set([correctAnswer]);
             const [num1, num2] = currentProblem;
@@ -487,6 +570,7 @@
             }
             displayChoices(Array.from(choices).sort(() => Math.random() - 0.5));
         }
+
         function displayChoices(choices) {
             answerOptionsEl.innerHTML = '';
             choices.forEach(choice => {
@@ -497,19 +581,34 @@
                 answerOptionsEl.appendChild(button);
             });
         }
-        async function checkAnswer(userAnswer, button) {
+
+        async function checkAnswer(userAnswer, element) {
             if (isSoundOn && !audioStarted) { await Tone.start(); audioStarted = true; }
             totalAttempts++;
-            const isCorrect = userAnswer === correctAnswer;
+            const isCorrect = parseInt(userAnswer) === correctAnswer;
             const problemKey = `${currentProblem[0]}x${currentProblem[1]}`;
             const problemTag = document.getElementById(`tag-${problemKey}`);
+
             problemTag.classList.remove('is-current-question');
+
             if (isCorrect) {
                 playCorrectSound();
                 problemsToDo = problemsToDo.filter(p => !(p[0] === currentProblem[0] && p[1] === currentProblem[1]));
                 allTimeWrongProblems.delete(problemKey);
+                
                 problemTag.scrollIntoView({ behavior: "smooth", block: "center" });
+                
                 updateProgressCount();
+                
+                if (!isMultipleChoice) {
+                    element.classList.add('correct');
+                    element.disabled = true;
+                } else {
+                    const buttons = answerOptionsEl.querySelectorAll('button');
+                    buttons.forEach(btn => btn.disabled = true);
+                    element.classList.add('correct');
+                }
+                
                 setTimeout(() => {
                     triggerTagExplosion(problemTag);
                     setTimeout(() => {
@@ -521,28 +620,40 @@
                         problemTag.classList.add('bg-green-400');
                     }, 300);
                 }, 200);
+
                 setTimeout(nextQuestion, 1000);
+
             } else {
-                const buttons = answerOptionsEl.querySelectorAll('button');
-                buttons.forEach(btn => btn.disabled = true);
                 playIncorrectSound();
-                button.classList.add('incorrect');
-                buttons.forEach(btn => { if (parseInt(btn.textContent) === correctAnswer) btn.classList.add('correct'); });
+                if (isMultipleChoice) {
+                    const buttons = answerOptionsEl.querySelectorAll('button');
+                    buttons.forEach(btn => btn.disabled = true);
+                    element.classList.add('incorrect');
+                    buttons.forEach(btn => { if (parseInt(btn.textContent) === correctAnswer) btn.classList.add('correct'); });
+                } else {
+                    element.classList.add('incorrect');
+                    element.disabled = true;
+                }
+                
                 problemTag.parentNode.removeChild(problemTag);
                 wrongAttempts[problemKey] = (wrongAttempts[problemKey] || 0) + 1;
                 allTimeWrongProblems.add(problemKey);
                 problemsGottenWrongInRound.push(currentProblem);
                 problemsToDo = problemsToDo.filter(p => !(p[0] === currentProblem[0] && p[1] === currentProblem[1]));
+                
                 renderWrongList();
                 const wrongTag = document.getElementById(`wrong-tag-${problemKey}`);
                 if (wrongTag) { wrongTag.scrollIntoView({ behavior: "smooth", block: "center" }); }
+                
                 resultDisplayEl.innerHTML = `<p class="fredoka text-5xl">${problemKey}=${correctAnswer}</p>`;
+                
                 setTimeout(() => cardEl.classList.add('is-flipped'), 500);
                 setTimeout(nextQuestion, 2500);
             }
             updateProgressCount();
         }
-        function nextQuestion() {
+        
+        function nextQuestion() { 
             if (cardEl.classList.contains('is-flipped')) {
                 cardEl.classList.remove('is-flipped');
                 setTimeout(generateProblem, 300);
@@ -550,6 +661,7 @@
                 generateProblem();
             }
         }
+        
         function triggerTagExplosion(tagElement) {
             const rect = tagElement.getBoundingClientRect();
             const colors = ['#FFD700', '#FFC300', '#FFFFFF', '#FFBF00', '#f97316'];
@@ -567,6 +679,7 @@
                 setTimeout(() => p.remove(), 600);
             }
         }
+
         function triggerFireworks(containerEl) {
             containerEl.innerHTML = '';
             for (let i = 0; i < 30; i++) {
@@ -581,6 +694,7 @@
                 setTimeout(() => p.remove(), 1000);
             }
         }
+        
         function showSetupScreen() {
             if (timerInterval) clearInterval(timerInterval);
             winModalEl.classList.add('hidden');
@@ -590,6 +704,7 @@
             toTableInput.value = '';
             setupModalEl.classList.remove('hidden');
         }
+
         soundToggleBtn.addEventListener('click', () => {
             isSoundOn = !isSoundOn;
             if (isSoundOn) {
@@ -602,6 +717,32 @@
                 soundToggleDot.style.transform = 'translateX(0)';
             }
         });
+
+        answerModeBtn.addEventListener('click', () => {
+            isMultipleChoice = !isMultipleChoice;
+            if (isMultipleChoice) {
+                answerModeBtn.classList.remove('bg-gray-300');
+                answerModeBtn.classList.add('bg-green-400');
+                answerModeDot.style.transform = 'translateX(1.75rem)';
+                answerModeText.textContent = 'Multiple Choice';
+            } else {
+                answerModeBtn.classList.add('bg-gray-300');
+                answerModeBtn.classList.remove('bg-green-400');
+                answerModeDot.style.transform = 'translateX(0)';
+                answerModeText.textContent = 'Type Answer';
+            }
+        });
+
+        answerInputEl.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            if (e.target.value.length > 3) {
+                e.target.value = e.target.value.slice(0, 3);
+            }
+            if (e.target.value) {
+                checkAnswer(parseInt(e.target.value), e.target);
+            }
+        });
+
         startGameBtn.addEventListener('click', handleStartSetup);
         playAgainBtn.addEventListener('click', showSetupScreen);
         startPracticeBtn.addEventListener('click', () => {
@@ -610,6 +751,7 @@
             }
         });
         restartBtn.addEventListener('click', showSetupScreen);
+        
     </script>
 </body>
 </html>
