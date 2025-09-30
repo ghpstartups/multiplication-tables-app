@@ -15,6 +15,7 @@
             position: fixed;
             width: 100%;
             height: 100%;
+            margin: 0;
         }
         .fredoka {
             font-family: 'Fredoka One', cursive;
@@ -153,6 +154,54 @@
         input[type=number] {
             -moz-appearance: textfield;
         }
+
+        /* Responsive adjustments */
+        #game-container {
+            max-width: 100vw;
+            width: 100%;
+            padding: 0 5px;
+        }
+        .card-container {
+            height: 30vh; /* Reduced height to avoid browser nav bar */
+            max-height: 200px; /* Cap height for smaller screens */
+            perspective: 1000px;
+        }
+        .card-face {
+            padding: 2px; /* Reduced padding to use white space */
+        }
+        #problem {
+            font-size: 4rem; /* Slightly smaller font for better fit */
+        }
+        #answer-options {
+            gap: 2px; /* Tighter spacing for buttons */
+        }
+        .answer-btn {
+            font-size: 1rem; /* Smaller font for buttons */
+            padding: 4px;
+        }
+
+        /* Media queries for different devices */
+        @media (max-width: 768px) {
+            #game-container {
+                padding: 0 2px;
+            }
+            .card-container {
+                height: 25vh; /* Further reduce for smaller screens */
+                max-height: 180px;
+            }
+            #problem {
+                font-size: 3rem;
+            }
+            .answer-btn {
+                font-size: 0.9rem;
+            }
+        }
+        @media (orientation: landscape) {
+            .card-container {
+                height: 35vh; /* Slightly taller in landscape */
+                max-height: 250px;
+            }
+        }
     </style>
 </head>
 <body class="bg-blue-100 flex flex-col items-center justify-center min-h-screen p-1">
@@ -213,13 +262,13 @@
             </div>
             
             <!-- Card -->
-            <div class="min-h-0" style="height: 40%; perspective: 1000px;">
+            <div class="min-h-0 card-container">
                 <div id="card" class="relative w-full card">
-                    <div class="absolute w-full h-full card-face bg-white rounded-2xl shadow-xl flex flex-col items-center justify-center p-4 text-center">
-                        <p class="text-5xl fredoka text-gray-800" id="problem"></p>
-                        <div id="answer-options" class="mt-4 grid grid-cols-2 gap-3 w-full"></div>
+                    <div class="absolute w-full h-full card-face bg-white rounded-2xl shadow-xl flex flex-col items-center justify-center p-2 text-center">
+                        <p class="text-4xl fredoka text-gray-800" id="problem"></p>
+                        <div id="answer-options" class="mt-2 grid grid-cols-2 gap-2 w-full"></div>
                     </div>
-                    <div id="card-back-face" class="absolute w-full h-full card-face card-face-back bg-red-400 rounded-2xl shadow-xl flex flex-col items-center justify-center p-6 text-center transition-colors duration-300">
+                    <div id="card-back-face" class="absolute w-full h-full card-face card-face-back bg-red-400 rounded-2xl shadow-xl flex flex-col items-center justify-center p-4 text-center transition-colors duration-300">
                         <div id="result-display" class="text-white"></div>
                         <p class="text-white/80 text-xs mt-3">Next question coming up...</p>
                     </div>
