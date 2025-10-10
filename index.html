@@ -107,10 +107,14 @@
         .keypad-btn { font-size: 1.4rem; padding: 4px 0; }
         #answer-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
         .answer-btn { font-size: 1.8rem; padding: 12px 0; }
-        .mode-btn-selected { background-color: #22c55e !important; color: white !important; }
+        .mode-btn-selected, .preset-btn-selected { 
+            background-color: #22c55e !important; 
+            color: white !important;
+            border-color: #16a34a !important;
+        }
     </style>
 </head>
-<body class="bg-blue-100 flex flex-col items-center justify-start pt-2">
+<body class="bg-blue-100 flex flex-col items-center justify-center min-h-screen p-1">
     <!-- Orientation Lock -->
     <div id="orientation-lock" class="hidden fixed inset-0 bg-blue-100 z-50 flex-col items-center justify-center text-center p-4">
         <svg class="w-16 h-16 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" /></svg>
@@ -122,17 +126,17 @@
     <div id="setup-modal" class="modal-enter bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 text-center max-w-sm w-full z-20">
         <div id="range-step">
             <h2 class="text-3xl fredoka text-blue-800">Choose Your Tables!</h2>
-            <div class="grid grid-cols-2 gap-2 my-4">
+            <div class="flex flex-col gap-2 my-4">
                 <button id="preset-1-12" class="preset-btn py-2 px-4 rounded-lg border-2 border-gray-300 bg-gray-100">1 to 12</button>
                 <button id="preset-1-10" class="preset-btn py-2 px-4 rounded-lg border-2 border-gray-300 bg-gray-100">1 to 10</button>
+                <button id="custom-btn" class="preset-btn py-2 px-4 rounded-lg border-2 border-gray-300 bg-gray-100">Custom</button>
             </div>
-            <p class="text-gray-500 my-2">or Custom</p>
-            <div class="flex items-center justify-center gap-4">
-                <div>
+            <div id="custom-range-inputs" class="hidden items-center justify-center gap-4">
+                <div class="flex flex-col items-center">
                     <label for="from-table" class="text-gray-700">From</label>
                     <input type="number" id="from-table" placeholder="1" class="w-20 text-center text-lg py-1 px-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500">
                 </div>
-                <div>
+                <div class="flex flex-col items-center">
                     <label for="to-table" class="text-gray-700">To</label>
                     <input type="number" id="to-table" placeholder="12" class="w-20 text-center text-lg py-1 px-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500">
                 </div>
@@ -140,11 +144,9 @@
         </div>
         <div id="mode-step" class="hidden">
             <h2 class="text-3xl fredoka text-blue-800">Choose Game Mode</h2>
-            <div class="my-4">
-                <div class="grid grid-cols-2 gap-2">
-                    <button id="mode-choice-btn" class="py-2 px-4 rounded-lg border-2 border-gray-300 mode-btn-selected">Multiple Choice</button>
-                    <button id="mode-keypad-btn" class="py-2 px-4 rounded-lg border-2 border-gray-300">Keypad</button>
-                </div>
+            <div class="my-4 flex flex-col gap-2">
+                <button id="mode-choice-btn" class="py-2 px-4 rounded-lg border-2 border-gray-300 mode-btn-selected">Multiple Choice</button>
+                <button id="mode-keypad-btn" class="py-2 px-4 rounded-lg border-2 border-gray-300">Type Your Answer</button>
             </div>
         </div>
         <p id="setup-error" class="text-red-500 h-5 mb-2"></p>
@@ -152,7 +154,7 @@
     </div>
 
     <!-- Game Container -->
-    <div id="game-container" class="w-full mx-auto flex-col hidden">
+    <div id="game-container" class="w-full mx-auto flex-col h-full hidden">
         <div class="text-center flex-shrink-0">
             <h1 class="text-2xl md:text-3xl fredoka text-blue-800">Multiplication Mastery</h1>
             <div class="flex items-center justify-center gap-4">
@@ -160,10 +162,10 @@
                 <button id="restart-btn" class="bg-red-500 text-white py-1 px-3 rounded-full text-xs hover:bg-red-600 active:scale-95 transition-transform shadow-md">Restart</button>
             </div>
         </div>
-        <div class="flex flex-col gap-2 my-1">
+        <div class="flex flex-col gap-2 my-1 flex-shrink-0">
             <div class="bg-white/70 backdrop-blur-sm rounded-xl p-2 shadow-md flex flex-col">
                 <h2 class="text-xs text-center text-gray-700 mb-1 flex-shrink-0">PROGRESS (<span id="progress-count">0/0</span>)</h2>
-                <div id="progress-container" class="scrollable-list overflow-y-auto flex-grow flex flex-wrap gap-1 justify-center content-start p-1" style="max-height: 110px;"></div>
+                <div id="progress-container" class="scrollable-list overflow-y-auto flex-grow flex flex-wrap gap-1 justify-center content-start p-1" style="max-height: 140px;"></div>
             </div>
             <div id="wrong-container" class="bg-white/70 backdrop-blur-sm rounded-xl p-2 shadow-md flex flex-col">
                 <div class="flex items-center justify-center mb-1 flex-shrink-0">
@@ -173,8 +175,8 @@
                 <div id="wrong-list" class="scrollable-list overflow-x-auto overflow-y-hidden flex-grow flex flex-nowrap gap-1 content-start p-1" style="min-height: 30px;"></div>
             </div>
             <div class="card-container mt-2">
-                <div id="card" class="relative w-full card">
-                    <div class="card-face bg-white rounded-2xl shadow-xl flex flex-col items-center justify-center py-4 px-2 text-center">
+                <div id="card" class="relative w-full card grid">
+                    <div class="card-face bg-white rounded-2xl shadow-xl flex flex-col items-center justify-center py-4 px-2 text-center row-start-1 col-start-1">
                         <p class="fredoka text-gray-800" id="problem"></p>
                         <div id="keypad-wrapper" class="w-full max-w-xs mx-auto mt-4">
                             <div id="answer-display" class="fredoka text-gray-700"></div>
@@ -184,7 +186,7 @@
                             <div id="answer-options"></div>
                         </div>
                     </div>
-                    <div id="card-back-face" class="absolute w-full h-full inset-0 card-face card-face-back bg-red-400 rounded-2xl shadow-xl flex flex-col items-center justify-center p-4 text-center transition-colors duration-300">
+                    <div id="card-back-face" class="card-face card-face-back bg-red-400 rounded-2xl shadow-xl flex-col items-center justify-center p-4 text-center row-start-1 col-start-1 hidden">
                         <div id="result-display" class="text-white"></div>
                         <p class="text-white/80 text-xs mt-3">Next question coming up...</p>
                     </div>
@@ -226,6 +228,8 @@
         const toTableInput = document.getElementById('to-table');
         const preset1_12Btn = document.getElementById('preset-1-12');
         const preset1_10Btn = document.getElementById('preset-1-10');
+        const customBtn = document.getElementById('custom-btn');
+        const customRangeInputs = document.getElementById('custom-range-inputs');
         const setupErrorEl = document.getElementById('setup-error');
         const startGameBtn = document.getElementById('start-game-btn');
         const modeChoiceBtn = document.getElementById('mode-choice-btn');
@@ -474,8 +478,8 @@
                 const wrongTag = document.getElementById(`wrong-tag-${activeProblemKey}`);
                 if (wrongTag) { wrongTag.scrollIntoView({ behavior: "smooth", block: "center" }); }
                 resultDisplayEl.innerHTML = `<p class="fredoka text-5xl">${activeProblemKey}=${correctAnswer}</p>`;
-                cardBackFaceEl.classList.remove('bg-green-400');
-                cardBackFaceEl.classList.add('bg-red-400');
+                cardBackFaceEl.classList.remove('hidden', 'flex');
+                cardBackFaceEl.classList.add('flex');
                 setTimeout(() => cardEl.classList.add('is-flipped'), 200);
                 setTimeout(nextQuestion, 2500);
             }
@@ -485,7 +489,11 @@
         function nextQuestion() {
             if (cardEl.classList.contains('is-flipped')) {
                 cardEl.classList.remove('is-flipped');
-                setTimeout(generateProblem, 300);
+                setTimeout(() => {
+                    cardBackFaceEl.classList.add('hidden');
+                    cardBackFaceEl.classList.remove('flex');
+                    generateProblem();
+                }, 300);
             } else {
                 generateProblem();
             }
@@ -591,10 +599,40 @@
         preset1_12Btn.addEventListener('click', () => {
             fromTableInput.value = 1;
             toTableInput.value = 12;
+            preset1_12Btn.classList.add('preset-btn-selected');
+            preset1_10Btn.classList.remove('preset-btn-selected');
+            customBtn.classList.remove('preset-btn-selected');
+            customRangeInputs.classList.add('hidden');
+            setupErrorEl.textContent = '';
         });
         preset1_10Btn.addEventListener('click', () => {
             fromTableInput.value = 1;
             toTableInput.value = 10;
+            preset1_10Btn.classList.add('preset-btn-selected');
+            preset1_12Btn.classList.remove('preset-btn-selected');
+            customBtn.classList.remove('preset-btn-selected');
+            customRangeInputs.classList.add('hidden');
+            setupErrorEl.textContent = '';
+        });
+        customBtn.addEventListener('click', () => {
+            fromTableInput.value = '';
+            toTableInput.value = '';
+            customBtn.classList.add('preset-btn-selected');
+            preset1_12Btn.classList.remove('preset-btn-selected');
+            preset1_10Btn.classList.remove('preset-btn-selected');
+            customRangeInputs.classList.remove('hidden');
+            customRangeInputs.classList.add('flex');
+            setupErrorEl.textContent = '';
+        });
+        fromTableInput.addEventListener('input', () => {
+             preset1_12Btn.classList.remove('preset-btn-selected');
+             preset1_10Btn.classList.remove('preset-btn-selected');
+             customBtn.classList.add('preset-btn-selected');
+        });
+        toTableInput.addEventListener('input', () => {
+             preset1_12Btn.classList.remove('preset-btn-selected');
+             preset1_10Btn.classList.remove('preset-btn-selected');
+             customBtn.classList.add('preset-btn-selected');
         });
         clearWrongsBtn.addEventListener('click', () => {
             allTimeWrongProblems.clear();
@@ -608,7 +646,12 @@
                 const from = parseInt(fromTableInput.value || fromTableInput.placeholder);
                 const to = parseInt(toTableInput.value || toTableInput.placeholder);
                 let error = "";
-                if (isNaN(from) || isNaN(to)) error = "Please enter numbers.";
+                if (isNaN(from) || isNaN(to)) { 
+                    // Check if a preset was selected
+                    if (!preset1_10Btn.classList.contains('preset-btn-selected') && !preset1_12Btn.classList.contains('preset-btn-selected')) {
+                        error = "Please enter numbers or select a preset.";
+                    }
+                }
                 else if (from < 1 || to < 1 || from > 12 || to > 12) error = "Numbers must be 1-12.";
                 else if (from > to) error = "'From' must be smaller.";
                 
