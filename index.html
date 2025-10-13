@@ -127,15 +127,23 @@
     <div id="mode-step" class="hidden">
       <h2 class="text-3xl fredoka text-blue-800">Choose Game Mode</h2>
       <div class="my-4 flex flex-col gap-2">
-        <button id="mode-choice-btn" class="py-2 px-4 rounded-lg border-2 border-gray-300 mode-btn-selected">Multiple Choice</button>
+        <button id="mode-choice-btn" class="py-2 px-4 rounded-lg border-2 border-gray-300">Multiple Choice</button>
         <button id="mode-keypad-btn" class="py-2 px-4 rounded-lg border-2 border-gray-300">Type Your Answer</button>
       </div>
     </div>
+    <div id="sound-step" class="hidden">
+        <h2 class="text-3xl fredoka text-blue-800">Sound Settings</h2>
+        <div class="my-4 flex justify-center gap-4">
+            <button id="sound-on-btn" class="py-3 px-8 rounded-lg border-2 border-gray-300 text-2xl">🔊</button>
+            <button id="sound-off-btn" class="py-3 px-8 rounded-lg border-2 border-gray-300 text-2xl">🔇</button>
+        </div>
+    </div>
+    
     <p id="setup-error" class="text-red-500 h-5 mb-2"></p>
     <button id="start-game-btn" class="w-full bg-blue-500 text-white py-3 px-8 rounded-full text-2xl fredoka hover:bg-blue-600 active:scale-95 transition-transform shadow-lg">Next</button>
   </div>
 
-  <div id="game-container" class="w-full mx-auto flex flex-col h-full hidden">
+  <div id="game-container" class="w-full mx-auto flex flex-col hidden">
     <div class="text-center flex-shrink-0 pt-2">
       <h1 class="text-2xl md:text-3xl fredoka text-blue-800">Multiplication Mastery</h1>
       <div class="flex items-center justify-center gap-4">
@@ -205,6 +213,7 @@
     const setupModalEl = document.getElementById('setup-modal');
     const rangeStepEl = document.getElementById('range-step');
     const modeStepEl = document.getElementById('mode-step');
+    const soundStepEl = document.getElementById('sound-step');
     const fromTableInput = document.getElementById('from-table');
     const toTableInput = document.getElementById('to-table');
     const preset1_12Btn = document.getElementById('preset-1-12');
@@ -217,6 +226,8 @@
     const startGameBtn = document.getElementById('start-game-btn');
     const modeChoiceBtn = document.getElementById('mode-choice-btn');
     const modeKeypadBtn = document.getElementById('mode-keypad-btn');
+    const soundOnBtn = document.getElementById('sound-on-btn');
+    const soundOffBtn = document.getElementById('sound-off-btn');
     const gameContainerEl = document.getElementById('game-container');
 
     const cardContainerEl = document.querySelector('.card-container');
@@ -247,7 +258,7 @@
 
     // State
     let setupStep = 'range';
-    let gameMode = 'choice';
+    let gameMode = null;
     let currentInput = '', isSoundOn = true, audioStarted = false;
     let currentProblem, correctAnswer, activeProblemKey = null;
     let allProblemsForRound = [], problemsToDo = [], problemsGottenWrongInRound = [];
@@ -394,7 +405,6 @@
       updateCardHeight();
     }
 
-    // FIX: Rewrote this function to be more robust and prevent infinite loops on edge cases like '1x1'.
     function generateAndDisplayChoices() {
       let choices = new Set([correctAnswer]);
       const [num1, num2] = currentProblem;
@@ -553,14 +563,14 @@
       gameContainerEl.classList.add('hidden');
       gameContainerEl.classList.remove('flex');
 
-      // FIX: Reset the card's flip state when restarting
       cardEl.classList.remove('is-flipped');
 
       fromTableInput.value = '';
       toTableInput.value = '';
       clearPresetSelection();
       resetModeSelection();
-      gameMode = 'choice';
+      resetSoundSelection();
+      gameMode = null;
 
       setupStep = 'range';
       startGameBtn.textContent = 'Next';
@@ -568,6 +578,7 @@
       isStarting = false;
       rangeStepEl.classList.remove('hidden');
       modeStepEl.classList.add('hidden');
+      soundStepEl.classList.add('hidden');
       setupErrorEl.textContent = '';
       setupModalEl.classList.remove('hidden');
 
@@ -594,7 +605,13 @@
       customRangeInputs.classList.add('hidden'); customRangeInputs.classList.remove('flex');
     }
     function resetModeSelection() {
-      modeChoiceBtn.classList.add('mode-btn-selected'); modeKeypadBtn.classList.remove('mode-btn-selected');
+      modeChoiceBtn.classList.remove('mode-btn-selected');
+      modeKeypadBtn.classList.remove('mode-btn-selected');
+    }
+    function resetSoundSelection() {
+        soundOnBtn.classList.add('mode-btn-selected');
+        soundOffBtn.classList.remove('mode-btn-selected');
+        isSoundOn = true;
     }
 
     preset1_12Btn.addEventListener('click', () => { fromTableInput.value=1; toTableInput.value=12; clearPresetSelection(); preset1_12Btn.classList.add('preset-btn-selected'); setupErrorEl.textContent=''; });
@@ -615,8 +632,12 @@
     });
 
     startGameBtn.addEventListener('click', () => {
-      if (isStarting) return; isStarting = true; startGameBtn.disabled = true;
+      if (isStarting) return;
+      isStarting = true;
+      startGameBtn.disabled = true;
+      setupErrorEl.textContent = '';
 
+      // Step 1: Validate Range and move to Mode
       if (setupStep === 'range') {
         const from = parseInt(fromTableInput.value || fromTableInput.placeholder);
         const to   = parseInt(toTableInput.value   || toTableInput.placeholder);
@@ -625,16 +646,30 @@
           if (!document.querySelector('.preset-btn-selected')) error = "Please select a range.";
         } else if (from < 1 || to < 1 || from > 12 || to > 12) error = "Numbers must be 1-12.";
         else if (from > to) error = "'From' must be smaller.";
-        setupErrorEl.textContent = error;
-        if (error) { isStarting=false; startGameBtn.disabled=false; return; }
+        
+        if (error) {
+          setupErrorEl.textContent = error;
+          isStarting=false; startGameBtn.disabled=false; return;
+        }
 
-        rangeStepEl.classList.add('hidden'); modeStepEl.classList.remove('hidden');
-        startGameBtn.textContent = 'Start Game'; setupStep = 'mode';
-
-        gameContainerEl.classList.add('is-choice'); updateCardHeight();
-
-        isStarting=false; startGameBtn.disabled=false;
+        rangeStepEl.classList.add('hidden');
+        modeStepEl.classList.remove('hidden');
+        setupStep = 'mode';
+      
+      // Step 2: Validate Mode and move to Sound
       } else if (setupStep === 'mode') {
+        if (!gameMode) {
+          setupErrorEl.textContent = "Please choose a game mode.";
+          isStarting=false; startGameBtn.disabled=false; return;
+        }
+
+        modeStepEl.classList.add('hidden');
+        soundStepEl.classList.remove('hidden');
+        startGameBtn.textContent = 'Start Game';
+        setupStep = 'sound';
+
+      // Step 3: Start the game
+      } else if (setupStep === 'sound') {
         const from = parseInt(fromTableInput.value || fromTableInput.placeholder);
         const to   = parseInt(toTableInput.value   || toTableInput.placeholder);
 
@@ -642,27 +677,49 @@
         for (let i = from; i <= to; i++) for (let j = 1; j <= 12; j++) initialProblemSet.push([i,j]);
 
         setupModalEl.classList.add('hidden');
-        gameContainerEl.classList.remove('hidden'); gameContainerEl.classList.add('flex');
+        gameContainerEl.classList.remove('hidden');
+        gameContainerEl.classList.add('flex');
 
-        if (gameMode === 'choice') gameContainerEl.classList.add('is-choice'); else gameContainerEl.classList.remove('is-choice');
+        if (gameMode === 'choice') {
+            gameContainerEl.classList.add('is-choice');
+        } else {
+            gameContainerEl.classList.remove('is-choice');
+        }
 
         initializeRound(initialProblemSet, true);
         updateCardHeight();
-
-        isStarting=false; startGameBtn.disabled=false;
       }
+      
+      isStarting=false;
+      startGameBtn.disabled=false;
     });
 
-    // Mode buttons + height updates
+    // Mode buttons
     modeChoiceBtn.addEventListener('click', () => {
       gameMode = 'choice';
-      modeChoiceBtn.classList.add('mode-btn-selected'); modeKeypadBtn.classList.remove('mode-btn-selected');
-      gameContainerEl.classList.add('is-choice'); updateCardHeight();
+      modeChoiceBtn.classList.add('mode-btn-selected');
+      modeKeypadBtn.classList.remove('mode-btn-selected');
+      setupErrorEl.textContent = '';
+      updateCardHeight();
     });
     modeKeypadBtn.addEventListener('click', () => {
       gameMode = 'keypad';
-      modeKeypadBtn.classList.add('mode-btn-selected'); modeChoiceBtn.classList.remove('mode-btn-selected');
-      gameContainerEl.classList.remove('is-choice'); updateCardHeight();
+      modeKeypadBtn.classList.add('mode-btn-selected');
+      modeChoiceBtn.classList.remove('mode-btn-selected');
+      setupErrorEl.textContent = '';
+      updateCardHeight();
+    });
+
+    // Sound buttons
+    soundOnBtn.addEventListener('click', () => {
+        isSoundOn = true;
+        soundOnBtn.classList.add('mode-btn-selected');
+        soundOffBtn.classList.remove('mode-btn-selected');
+    });
+    soundOffBtn.addEventListener('click', () => {
+        isSoundOn = false;
+        soundOffBtn.classList.add('mode-btn-selected');
+        soundOnBtn.classList.remove('mode-btn-selected');
     });
 
     playAgainBtn.addEventListener('click', showSetupScreen);
@@ -676,8 +733,7 @@
     // Init
     window.onload = () => {
       createKeypad();
-      gameContainerEl.classList.add('is-choice');
-      updateCardHeight();
+      showSetupScreen(); // Start on the setup screen
     };
   </script>
 </body>
