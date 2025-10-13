@@ -8,7 +8,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: 'Inter', sans-serif; touch-action: manipulation; overflow: hidden; position: fixed; width: 100%; height: 100%; margin: 0; }
+    body { font-family: 'Inter', sans-serif; touch-action: manipulation; overflow: hidden; position: fixed; width: 100%; height: 100%; margin: 0; padding-top: 1rem; }
     .fredoka { font-family: 'Fredoka One', cursive; }
     .card { transform-style: preserve-3d; transition: transform 0.6s; }
     .card.is-flipped { transform: rotateY(180deg); }
@@ -96,7 +96,7 @@
     }
   </style>
 </head>
-<body class="bg-blue-100 flex flex-col items-center justify-center min-h-screen p-1">
+<body class="bg-blue-100 flex flex-col items-center justify-start p-1">
   <div id="orientation-lock" class="hidden fixed inset-0 bg-blue-100 z-50 flex-col items-center justify-center text-center p-4">
     <svg class="w-16 h-16 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" /></svg>
     <h2 class="text-2xl fredoka text-blue-800 mt-4">Please rotate your device</h2>
@@ -105,7 +105,7 @@
 
   <div id="setup-modal" class="modal-enter bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 text-center max-w-sm w-full z-20">
     <div id="range-step">
-      <h2 class="text-3xl fredoka text-blue-800">Choose Your Tables!</h2>
+      <h2 class="text-2xl md:text-3xl fredoka text-blue-800">Choose Your Tables!</h2>
       <div class="grid grid-cols-2 gap-2 my-4">
         <button id="preset-1-6" class="preset-btn py-2 px-4 rounded-lg border-2 border-gray-300 bg-gray-100">1 to 6</button>
         <button id="preset-6-12" class="preset-btn py-2 px-4 rounded-lg border-2 border-gray-300 bg-gray-100">6 to 12</button>
@@ -125,17 +125,27 @@
       </div>
     </div>
     <div id="mode-step" class="hidden">
-      <h2 class="text-3xl fredoka text-blue-800">Choose Game Mode</h2>
+      <h2 class="text-2xl md:text-3xl fredoka text-blue-800">Choose Game Mode</h2>
       <div class="my-4 flex flex-col gap-2">
         <button id="mode-choice-btn" class="py-2 px-4 rounded-lg border-2 border-gray-300">Multiple Choice</button>
         <button id="mode-keypad-btn" class="py-2 px-4 rounded-lg border-2 border-gray-300">Type Your Answer</button>
       </div>
     </div>
     <div id="sound-step" class="hidden">
-        <h2 class="text-3xl fredoka text-blue-800">Sound Settings</h2>
+        <h2 class="text-2xl md:text-3xl fredoka text-blue-800">Sound Settings</h2>
         <div class="my-4 flex justify-center gap-4">
-            <button id="sound-on-btn" class="py-3 px-8 rounded-lg border-2 border-gray-300 text-2xl">🔊</button>
-            <button id="sound-off-btn" class="py-3 px-8 rounded-lg border-2 border-gray-300 text-2xl">🔇</button>
+            <button id="sound-on-btn" class="py-2 px-8 rounded-lg border-2 border-gray-300">
+                <div class="flex flex-col items-center">
+                    <span class="text-sm font-semibold">On</span>
+                    <span class="text-2xl">🔊</span>
+                </div>
+            </button>
+            <button id="sound-off-btn" class="py-2 px-8 rounded-lg border-2 border-gray-300">
+                <div class="flex flex-col items-center">
+                    <span class="text-sm font-semibold">Off</span>
+                    <span class="text-2xl">🔇</span>
+                </div>
+            </button>
         </div>
     </div>
     
