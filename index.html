@@ -493,6 +493,7 @@
       totalAttempts++;
 
       const positive = ['😊','🎉','👍','🌟','🤩','✅','💯','🚀','🌈','🦄','🍕','🎸','🤖','👑','🎯','🔥','💎','✨','🎈','🎁','🐶','🐱','🦊','🐻','🐼','🐨','🦁','🐯','🦋','🐞','🍎','🍓','🏆','🥇','💡','😎','😇','😉','😋','😍','🥳','🤯','🤠','🙌','👏','💪','🧠','🏅','🎊','💫','💥','✔️','🛸','⚡','☀️','⭐','👌','✌️','🙏','🤓','😃','😄','😁','😆','🧞','🦸','🪄','🎩','🍀'];
+      const randomEmoji = positive[Math.floor(Math.random() * positive.length)]; // FIX: Choose emoji ONCE
 
       if (gameMode === 'keypad') keypadEl.querySelectorAll('button').forEach(btn => btn.disabled = true);
       else answerOptionsEl.querySelectorAll('button').forEach(btn => btn.disabled = true);
@@ -507,7 +508,7 @@
         if (gameMode === 'keypad') correctButton = document.getElementById('keypad-enter-btn');
         if (correctButton) {
           triggerElementExplosion(correctButton);
-          setTimeout(() => { correctButton.innerHTML = positive[Math.floor(Math.random()*positive.length)]; }, 300);
+          setTimeout(() => { correctButton.innerHTML = randomEmoji; }, 300);
         }
         problemsToDo = problemsToDo.filter(p => p !== currentProblem);
         allTimeWrongProblems.delete(activeProblemKey);
@@ -516,7 +517,7 @@
           setTimeout(() => {
             triggerElementExplosion(problemTag);
             setTimeout(() => {
-              problemTag.innerHTML = positive[Math.floor(Math.random()*positive.length)];
+              problemTag.innerHTML = randomEmoji;
               problemTag.style.fontSize = '1.2rem';
               problemTag.classList.remove('bg-green-500');
               problemTag.classList.add('bg-green-400');
