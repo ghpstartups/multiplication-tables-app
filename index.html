@@ -71,9 +71,20 @@
     .answer-btn { padding: 8px 0 !important; }
     #answer-display { height: 34px; font-size: 1.6rem; }
 
-    /* Multiple Choice: JS will set exact height; default to auto here */
+    /* Multiple Choice layout */
     .is-choice .card-container { height: auto; }
-    .is-choice #card .card-face { justify-content: flex-start !important; align-items: stretch !important; padding-top: 6px !important; padding-bottom: 6px !important; }
+    /* ⬇️ Only top-align the FRONT face; leave back face centered */
+    .is-choice #card .card-face:not(.card-face-back) {
+      justify-content: flex-start !important;
+      align-items: stretch !important;
+      padding-top: 6px !important;
+      padding-bottom: 6px !important;
+    }
+    /* ⬇️ Ensure the BACK face (red side) stays perfectly centered */
+    .is-choice #card .card-face-back {
+      justify-content: center !important;
+      align-items: center !important;
+    }
     .is-choice #problem { font-size: 2.4rem; margin-bottom: 4px; }
     .is-choice #answer-options { gap: 3px; }
     .is-choice .answer-btn { padding: 6px 0 !important; }
@@ -271,42 +282,32 @@
       }
     }
 
-    // --- NEW: dynamic height so Multiple Choice has no bottom whitespace ---
+    // Dynamic height for Multiple Choice
     function px(n){ return `${Math.round(n)}px`; }
     function vh(n){ return (window.innerHeight * (n/100)); }
 
     function updateCardHeight() {
-      // Keypad uses CSS cap; Multiple Choice uses measured height (with a max).
       if (gameMode === 'choice') {
-        // Measure whichever face is visible
         const frontVisible = !cardEl.classList.contains('is-flipped');
         const face = frontVisible ? cardFrontFaceEl : cardBackFaceEl;
 
-        // Temporarily un-absolute to measure content height accurately
         const prevPos = face.style.position;
         const prevH = face.style.height;
         face.style.position = 'static';
         face.style.height = 'auto';
 
-        // Measure content height, add a tiny safety padding
-        const contentHeight = face.scrollHeight + 2; // tight
-        // Apply min/max to keep things stable
-        const minH = 200;                 // don't get too tiny
-        const maxH = Math.min(vh(40), 360); // match feel of keypad cap but slightly smaller
+        const contentHeight = face.scrollHeight + 2;
+        const minH = 200;
+        const maxH = Math.min(vh(40), 360);
         const finalH = Math.max(minH, Math.min(contentHeight, maxH));
-
-        // Set explicit height on container so absolute faces have a box
         cardContainerEl.style.height = px(finalH);
 
-        // Restore styles
         face.style.position = prevPos;
         face.style.height = prevH;
       } else {
-        // reset to keypad cap via CSS; remove inline height
         cardContainerEl.style.height = '';
       }
     }
-    // ----------------------------------------------------------------------
 
     function handleKeypadInput(value) {
       if (value === 'backspace') currentInput = currentInput.slice(0, -1);
@@ -395,7 +396,7 @@
         generateAndDisplayChoices();
       }
 
-      updateCardHeight(); // adjust height per mode after content set
+      updateCardHeight();
     }
 
     function generateAndDisplayChoices() {
@@ -417,8 +418,6 @@
         button.addEventListener('click', (e) => checkAnswer(choice, e.currentTarget));
         answerOptionsEl.appendChild(button);
       });
-
-      // After DOM paints, measure & set height to remove bottom whitespace
       requestAnimationFrame(updateCardHeight);
     }
 
@@ -477,7 +476,7 @@
 
         document.getElementById('result-display').innerHTML = `<p class="fredoka text-5xl">${activeProblemKey}=${correctAnswer}</p>`;
         cardBackFaceEl.classList.remove('hidden'); cardBackFaceEl.classList.add('flex');
-        setTimeout(() => { cardEl.classList.add('is-flipped'); updateCardHeight(); }, 200); // ensure height fits back face too
+        setTimeout(() => { cardEl.classList.add('is-flipped'); updateCardHeight(); }, 200);
         setTimeout(nextQuestion, 2500);
       }
       updateProgressCount();
@@ -537,48 +536,26 @@
       rangeStepEl.classList.remove('hidden'); modeStepEl.classList.add('hidden'); setupErrorEl.textContent = '';
       setupModalEl.classList.remove('hidden');
 
-      gameContainerEl.classList.add('is-choice'); // prepare choice layout by default
-      updateCardHeight();
-    }
-
-    function triggerFireworks(container) {
-      container.innerHTML = '';
-      for (let i=0;i<30;i++){
-        const p=document.createElement('div'); p.className='particle';
-        const s = Math.floor(Math.random()*10+5)+'px'; p.style.width=s; p.style.height=s;
-        p.style.backgroundColor=['#ffc700','#ff0000','#22c55e','#3b82f6','#8b5cf6'][Math.floor(Math.random()*5)];
-        p.style.left='50%'; p.style.top='50%';
-        p.style.setProperty('--transform-to', `translate(${Math.random()*200-100}px, ${Math.random()*200-100}px) scale(0)`);
-        container.appendChild(p); setTimeout(()=>p.remove(),1000);
-      }
-    }
-    function triggerElementExplosion(element) {
-      const rect=element.getBoundingClientRect();
-      const colors=['#FFD700','#FFC300','#FFFFFF','#FFBF00','#f97316'];
-      for (let i=0;i<20;i++){
-        const p=document.createElement('div'); p.className='tag-particle';
-        const s=Math.floor(Math.random()*6+3)+'px'; p.style.width=s; p.style.height=s;
-        p.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)];
-        p.style.left=`${rect.left + rect.width/2}px`; p.style.top=`${rect.top + rect.height/2}px`;
-        p.style.setProperty('--transform-to', `translate(${Math.random()*80-40}px, ${Math.random()*80-40}px) scale(0)`);
-        document.body.appendChild(p); setTimeout(()=>p.remove(),600);
-      }
-    }
-
-    // Mode buttons (and apply/remove choice layout)
-    modeChoiceBtn.addEventListener('click', () => {
-      gameMode = 'choice';
-      modeChoiceBtn.classList.add('mode-btn-selected'); modeKeypadBtn.classList.remove('mode-btn-selected');
       gameContainerEl.classList.add('is-choice');
       updateCardHeight();
-    });
-    modeKeypadBtn.addEventListener('click', () => {
-      gameMode = 'keypad';
-      modeKeypadBtn.classList.add('mode-btn-selected'); modeChoiceBtn.classList.remove('mode-btn-selected');
-      gameContainerEl.classList.remove('is-choice');
-      updateCardHeight();
-    });
+    }
 
+    function triggerFireworks(container){
+      container.innerHTML=''; for(let i=0;i<30;i++){ const p=document.createElement('div'); p.className='particle';
+      const s=Math.floor(Math.random()*10+5)+'px'; p.style.width=s; p.style.height=s;
+      p.style.backgroundColor=['#ffc700','#ff0000','#22c55e','#3b82f6','#8b5cf6'][Math.floor(Math.random()*5)];
+      p.style.left='50%'; p.style.top='50%'; p.style.setProperty('--transform-to',`translate(${Math.random()*200-100}px, ${Math.random()*200-100}px) scale(0)`);
+      container.appendChild(p); setTimeout(()=>p.remove(),1000);} }
+    function triggerElementExplosion(element){ const rect=element.getBoundingClientRect(); const colors=['#FFD700','#FFC300','#FFFFFF','#FFBF00','#f97316'];
+      for(let i=0;i<20;i++){ const p=document.createElement('div'); p.className='tag-particle';
+      const s=Math.floor(Math.random()*6+3)+'px'; p.style.width=s; p.style.height=s;
+      p.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)];
+      p.style.left=`${rect.left+rect.width/2}px`; p.style.top=`${rect.top+rect.height/2}px`;
+      p.style.setProperty('--transform-to',`translate(${Math.random()*80-40}px, ${Math.random()*80-40}px) scale(0)`); document.body.appendChild(p);
+      setTimeout(()=>p.remove(),600);} }
+
+    function renderFullProgressList(){ progressContainer.innerHTML = initialProblemSet.map(p=>`<div id="tag-${p[0]}x${p[1]}" class="problem-tag bg-green-500">${p[0]}x${p[1]}</div>`).join(''); }
+    function renderPracticeRoundProgressList(){ progressContainer.innerHTML = allProblemsForRound.map(p=>`<div id="tag-${p[0]}x${p[1]}" class="problem-tag bg-green-500">${p[0]}x${p[1]}</div>`).join(''); }
     function clearPresetSelection() {
       [preset1_12Btn, preset1_10Btn, preset1_6Btn, preset6_12Btn, customBtn].forEach(btn => btn.classList.remove('preset-btn-selected'));
       customRangeInputs.classList.add('hidden'); customRangeInputs.classList.remove('flex');
@@ -617,7 +594,6 @@
         rangeStepEl.classList.add('hidden'); modeStepEl.classList.remove('hidden');
         startGameBtn.textContent = 'Start Game'; setupStep = 'mode';
 
-        // Default to choice layout on the mode step
         gameContainerEl.classList.add('is-choice'); updateCardHeight();
 
         isStarting=false; startGameBtn.disabled=false;
@@ -640,22 +616,35 @@
       }
     });
 
+    // Mode buttons + height updates
+    modeChoiceBtn.addEventListener('click', () => {
+      gameMode = 'choice';
+      modeChoiceBtn.classList.add('mode-btn-selected'); modeKeypadBtn.classList.remove('mode-btn-selected');
+      gameContainerEl.classList.add('is-choice'); updateCardHeight();
+    });
+    modeKeypadBtn.addEventListener('click', () => {
+      gameMode = 'keypad';
+      modeKeypadBtn.classList.add('mode-btn-selected'); modeChoiceBtn.classList.remove('mode-btn-selected');
+      gameContainerEl.classList.remove('is-choice'); updateCardHeight();
+    });
+
     playAgainBtn.addEventListener('click', showSetupScreen);
     startPracticeBtn.addEventListener('click', () => { if (problemsGottenWrongInRound.length > 0) initializeRound(problemsGottenWrongInRound, false); });
     restartBtn.addEventListener('click', showSetupScreen);
 
-    // Resize/orientation: keep height tight
+    // Resize/orientation updates
     window.addEventListener('resize', () => updateCardHeight());
     window.addEventListener('orientationchange', () => setTimeout(updateCardHeight, 150));
 
-    // Progress UI
+    // Clock
     function updateClock() {
       const minutes = String(Math.floor(((Date.now()-startTime)/1000)/60)).padStart(2,'0');
       const seconds = String(Math.floor(((Date.now()-startTime)/1000)%60)).padStart(2,'0');
       clockEl.textContent = `${minutes}:${seconds}`;
     }
 
-    function triggerFireworks(container){ /* unchanged visuals */ 
+    // Effects + lists
+    function triggerFireworks(container){
       container.innerHTML=''; for(let i=0;i<30;i++){ const p=document.createElement('div'); p.className='particle';
       const s=Math.floor(Math.random()*10+5)+'px'; p.style.width=s; p.style.height=s;
       p.style.backgroundColor=['#ffc700','#ff0000','#22c55e','#3b82f6','#8b5cf6'][Math.floor(Math.random()*5)];
@@ -676,9 +665,14 @@
       wrongCountEl.textContent=arr.length;
       wrongListEl.innerHTML=arr.sort((a,b)=>(a[0]*100+a[1])-(b[0]*100+b[1])).map(p=>`<div id="wrong-tag-${p[0]}x${p[1]}" class="problem-tag bg-orange-400">${p[0]}x${p[1]}</div>`).join('');
     }
+    function updateProgressCount(){ progressCountEl.textContent = `${initialProblemSet.length - allTimeWrongProblems.size}/${initialProblemSet.length}`; }
 
     // Init
-    window.onload = () => { createKeypad(); gameContainerEl.classList.add('is-choice'); updateCardHeight(); };
+    window.onload = () => { 
+      createKeypad(); 
+      gameContainerEl.classList.add('is-choice'); 
+      updateCardHeight(); 
+    };
   </script>
 </body>
 </html>
