@@ -566,8 +566,15 @@
       clearPresetSelection(); customBtn.classList.add('preset-btn-selected');
       customRangeInputs.classList.remove('hidden'); customRangeInputs.classList.add('flex'); setupErrorEl.textContent='';
     });
+    
+    // THIS IS THE FIX for the custom input fields disappearing
     [fromTableInput, toTableInput].forEach(input => {
-      input.addEventListener('input', () => { clearPresetSelection(); customBtn.classList.add('preset-btn-selected'); });
+      input.addEventListener('input', () => {
+        // De-select only the preset range buttons
+        [preset1_12Btn, preset1_10Btn, preset1_6Btn, preset6_12Btn].forEach(btn => btn.classList.remove('preset-btn-selected'));
+        // Ensure the main "Custom" button stays selected
+        customBtn.classList.add('preset-btn-selected');
+      });
     });
 
     startGameBtn.addEventListener('click', () => {
