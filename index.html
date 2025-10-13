@@ -84,7 +84,7 @@
             background-color: #22c55e !important; color: white !important; border-color: #16a34a !important;
         }
 
-        /* ---------- TIGHT CARD OVERRIDES ---------- */
+        /* ---------- TIGHT CARD BASE (both modes) ---------- */
         .card-container { height: min(340px, 46vh); }
         #card { height: 100%; }
         .card-face, #card-back-face { padding: 6px 8px !important; }
@@ -93,9 +93,28 @@
         .keypad-btn { padding: 2px 0 !important; }
         .answer-btn { padding: 8px 0 !important; }
         #answer-display { height: 34px; font-size: 1.6rem; }
+
+        /* ---------- CHOICE MODE TIGHT ---------- */
+        /* When Multiple Choice is active, make the card shorter and content start-aligned */
+        .is-choice .card-container { height: min(300px, 40vh); }
+        .is-choice #card .card-face { 
+          justify-content: flex-start !important; /* override justify-center */
+          align-items: stretch !important;
+          padding-top: 6px !important;
+          padding-bottom: 6px !important;
+        }
+        .is-choice #problem {
+          font-size: 2.4rem;
+          margin-bottom: 4px;
+        }
+        .is-choice #answer-options { gap: 3px; }          /* slightly tighter grid gap */
+        .is-choice .answer-btn { padding: 6px 0 !important; } /* slimmer buttons */
+
         @media (max-width: 380px) {
           .card-container { height: min(300px, 42vh); }
           #problem { font-size: 2.4rem; }
+          .is-choice .card-container { height: min(280px, 38vh); }
+          .is-choice #problem { font-size: 2.2rem; }
         }
     </style>
 </head>
@@ -160,7 +179,7 @@
                 </div>
                 <div id="wrong-list" class="scrollable-list overflow-x-auto overflow-y-hidden flex-grow flex flex-nowrap gap-1 content-start p-1" style="min-height: 30px;"></div>
             </div>
-            <!-- Tight card; do not fill all remaining height -->
+            <!-- Card: content-sized, not full height -->
             <div class="card-container mt-2 flex-none">
                 <div id="card" class="relative w-full h-full card">
                     <div class="absolute w-full h-full card-face bg-white rounded-2xl shadow-xl flex flex-col items-center justify-center py-4 px-2 text-center">
@@ -246,7 +265,10 @@
         const progressCountEl = document.getElementById('progress-count');
         const wrongListEl = document.getElementById('wrong-list');
         const wrongCountEl = document.getElementById('wrong-count');
-        
+
+        // Grab front face once
+        const cardFrontFaceEl = document.querySelector('#card .card-face');
+
         // State Variables
         let setupStep = 'range';
         let gameMode = 'choice';
@@ -257,7 +279,7 @@
         let wrongAttempts = {};
         let totalAttempts = 0, timerInterval = null, startTime = 0;
         let initialProblemSet = [];
-        let isStarting = false; // FIX: guard against double clicks
+        let isStarting = false; // guard against double clicks
 
         // Sound Synthesis
         const correctSynth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } }).toDestination();
@@ -345,7 +367,6 @@
         }
 
         function generateProblem() {
-            // FIX: null-guard last tag
             if (activeProblemKey) {
                 const lastTag = document.getElementById(`tag-${activeProblemKey}`);
                 if (lastTag) lastTag.classList.remove('is-current-question');
@@ -430,7 +451,6 @@
 
             const isCorrect = userAnswer === correctAnswer;
             const problemTag = document.getElementById(`tag-${activeProblemKey}`);
-            // FIX: null-guard problemTag
             if (problemTag) problemTag.classList.remove('is-current-question');
 
             if (isCorrect) {
@@ -470,7 +490,6 @@
                         if (parseInt(btn.textContent) === correctAnswer) btn.classList.add('correct');
                     });
                 }
-                // FIX: null-guard remove
                 if (problemTag && problemTag.parentNode) problemTag.parentNode.removeChild(problemTag);
 
                 wrongAttempts[activeProblemKey] = (wrongAttempts[activeProblemKey] || 0) + 1;
@@ -544,33 +563,32 @@
         }
         
         function showSetupScreen() {
-            // FIX: hard reset everything that could cause null refs / stale state
             if (timerInterval) clearInterval(timerInterval);
             winModalEl.classList.add('hidden');
             practiceModalEl.classList.add('hidden');
             gameContainerEl.classList.add('hidden');
             gameContainerEl.classList.remove('flex');
 
-            // Reset inputs
             fromTableInput.value = ''; 
             toTableInput.value = '';
 
-            // Reset selection visuals & state
             clearPresetSelection();
-            resetModeSelection();        // FIX: ensure Multiple Choice is visually & logically selected
-            gameMode = 'choice';         // FIX: ensure state matches UI
+            resetModeSelection();
+            gameMode = 'choice';
 
-            // Reset setup flow
             setupStep = 'range';
             startGameBtn.textContent = 'Next';
-            startGameBtn.disabled = false; // FIX
-            isStarting = false;            // FIX
+            startGameBtn.disabled = false;
+            isStarting = false;
 
             rangeStepEl.classList.remove('hidden');
             modeStepEl.classList.add('hidden');
             setupErrorEl.textContent = '';
             
             setupModalEl.classList.remove('hidden');
+
+            // CHOICE MODE TIGHT: ensure container class reset
+            gameContainerEl.classList.add('is-choice');
         }
 
         function triggerFireworks(container) {
@@ -605,16 +623,28 @@
              }
         }
 
-        // Mode buttons
+        // Mode buttons (also toggle compact class)
         modeChoiceBtn.addEventListener('click', () => {
             gameMode = 'choice';
             modeChoiceBtn.classList.add('mode-btn-selected');
             modeKeypadBtn.classList.remove('mode-btn-selected');
+
+            // CHOICE MODE TIGHT
+            gameContainerEl.classList.add('is-choice');
+            if (cardFrontFaceEl) {
+                cardFrontFaceEl.classList.add('tight-choice');
+            }
         });
         modeKeypadBtn.addEventListener('click', () => {
             gameMode = 'keypad';
             modeKeypadBtn.classList.add('mode-btn-selected');
             modeChoiceBtn.classList.remove('mode-btn-selected');
+
+            // CHOICE MODE TIGHT (remove)
+            gameContainerEl.classList.remove('is-choice');
+            if (cardFrontFaceEl) {
+                cardFrontFaceEl.classList.remove('tight-choice');
+            }
         });
 
         function clearPresetSelection() {
@@ -623,13 +653,11 @@
             customRangeInputs.classList.remove('flex');
         }
 
-        // FIX: reset mode visuals
         function resetModeSelection() {
             modeChoiceBtn.classList.add('mode-btn-selected');
             modeKeypadBtn.classList.remove('mode-btn-selected');
         }
 
-        // Preset handlers
         preset1_12Btn.addEventListener('click', () => {
             fromTableInput.value = 1; toTableInput.value = 12;
             clearPresetSelection(); preset1_12Btn.classList.add('preset-btn-selected');
@@ -664,9 +692,8 @@
             });
         });
 
-        // Start flow
         startGameBtn.addEventListener('click', () => {
-            if (isStarting) return;              // FIX: prevent double execution
+            if (isStarting) return;
             isStarting = true;
             startGameBtn.disabled = true;
 
@@ -683,7 +710,7 @@
                 setupErrorEl.textContent = error;
                 if (error) {
                     isStarting = false;
-                    startGameBtn.disabled = false; // FIX
+                    startGameBtn.disabled = false;
                     return;
                 }
 
@@ -692,8 +719,11 @@
                 startGameBtn.textContent = 'Start Game';
                 setupStep = 'mode';
 
-                isStarting = false;               // FIX
-                startGameBtn.disabled = false;    // FIX
+                // default to Multiple Choice compact on mode step
+                gameContainerEl.classList.add('is-choice');
+
+                isStarting = false;
+                startGameBtn.disabled = false;
             } else if (setupStep === 'mode') {
                 const from = parseInt(fromTableInput.value || fromTableInput.placeholder);
                 const to = parseInt(toTableInput.value || toTableInput.placeholder);
@@ -706,10 +736,18 @@
                 setupModalEl.classList.add('hidden');
                 gameContainerEl.classList.remove('hidden');
                 gameContainerEl.classList.add('flex');
+
+                // Apply compact class depending on selected mode
+                if (gameMode === 'choice') {
+                    gameContainerEl.classList.add('is-choice');
+                } else {
+                    gameContainerEl.classList.remove('is-choice');
+                }
+
                 initializeRound(initialProblemSet, true);
 
-                isStarting = false;               // FIX
-                startGameBtn.disabled = false;    // FIX
+                isStarting = false;
+                startGameBtn.disabled = false;
             }
         });
 
@@ -720,7 +758,11 @@
         restartBtn.addEventListener('click', showSetupScreen);
         
         // Initial load
-        window.onload = () => { createKeypad(); };
+        window.onload = () => { 
+            createKeypad();
+            // start in choice layout by default on first visit to setup
+            gameContainerEl.classList.add('is-choice');
+        };
     </script>
 </body>
 </html>
