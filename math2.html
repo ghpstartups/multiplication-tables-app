@@ -17,18 +17,10 @@
             height: 100%;
             margin: 0;
         }
-        .fredoka {
-            font-family: 'Fredoka One', cursive;
-        }
-        .card {
-            transform-style: preserve-3d;
-            transition: transform 0.6s;
-        }
+        .fredoka { font-family: 'Fredoka One', cursive; }
+        .card { transform-style: preserve-3d; transition: transform 0.6s; }
         .card.is-flipped { transform: rotateY(180deg); }
-        .card-face {
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-        }
+        .card-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
         .card-face-back { transform: rotateY(180deg); }
         .keypad-btn, .answer-btn, .preset-btn {
             transition: transform 0.1s ease, background-color 0.2s ease, border-color 0.2s ease;
@@ -36,6 +28,7 @@
         .keypad-btn:active, .answer-btn:active, .preset-btn:active { transform: scale(0.95); }
         .modal-enter { animation: modal-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes modal-in { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
         .problem-tag {
             font-family: 'Fredoka One', cursive;
             padding: 1px 6px;
@@ -45,9 +38,7 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
             color: white;
             transition: background-color 0.3s ease, font-size 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             flex-shrink: 0;
         }
         .is-current-question { animation: pulse-rainbow 2.5s infinite ease-in-out; }
@@ -57,10 +48,12 @@
             50% { transform: scale(1.0); box-shadow: 0 0 12px rgba(59, 130, 246, 0.7); background-color: #3b82f6; }
             75% { transform: scale(1.1); box-shadow: 0 0 15px rgba(239, 68, 68, 0.7); background-color: #ef4444; }
         }
+
         .particle { position: fixed; border-radius: 50%; animation: explode 1s ease-out forwards; z-index: 100; }
         @keyframes explode { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: var(--transform-to); } }
         .tag-particle { position: fixed; border-radius: 50%; animation: tag-explode 0.6s ease-out forwards; z-index: 100; }
         @keyframes tag-explode { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: var(--transform-to); } }
+
         .scrollable-list { -webkit-overflow-scrolling: touch; }
         .scrollable-list::-webkit-scrollbar { width: 4px; height: 4px; }
         .scrollable-list::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.2); border-radius: 4px; }
@@ -69,65 +62,37 @@
             #setup-modal, #game-container, #win-modal, #practice-modal { display: none !important; }
             #orientation-lock { display: flex; }
         }
+
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         input[type=number] { -moz-appearance: textfield; }
 
         #game-container { max-width: 400px; width: 100%; padding: 0 5px; }
         .card-container { perspective: 1000px; }
         .card-face { padding: 4px; }
-        #problem { font-size: 2.8rem; margin-bottom: 2px;}
+        #problem { font-size: 2.8rem; margin-bottom: 2px; }
+
         #answer-display { 
             height: 38px; font-size: 1.8rem; border: 2px solid #cbd5e1; border-radius: 0.5rem; 
             margin-bottom: 4px; padding: 0 10px; display: flex; align-items: center;
             justify-content: flex-end; background-color: #f1f5f9;
         }
         #keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-        .keypad-btn {
-            font-size: 1.5rem;
-            padding: 4px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        .keypad-btn { font-size: 1.5rem; padding: 4px 0; display: flex; align-items: center; justify-content: center; }
         #answer-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
         .answer-btn { font-size: 1.8rem; padding: 12px 0; }
         .mode-btn-selected, .preset-btn-selected { 
-            background-color: #22c55e !important; 
-            color: white !important;
-            border-color: #16a34a !important;
+            background-color: #22c55e !important; color: white !important; border-color: #16a34a !important;
         }
 
-        /* ---------------------------
-           TIGHT CARD OVERRIDES
-           ---------------------------*/
-        /* Cap the card so it doesn't stretch too tall on phones */
-        .card-container {
-          height: min(340px, 46vh);
-        }
-        /* Make the card use the capped height */
+        /* ---------- TIGHT CARD OVERRIDES ---------- */
+        .card-container { height: min(340px, 46vh); }
         #card { height: 100%; }
-
-        /* Tighten padding inside faces (affects both modes) */
-        .card-face,
-        #card-back-face {
-          padding: 6px 8px !important;
-        }
-        /* Reduce breathing room */
-        #problem {
-          font-size: 2.6rem;
-          margin-bottom: 0;
-          line-height: 1.1;
-        }
-        #keypad-wrapper,
-        #answer-options-wrapper {
-          margin-top: 6px !important;
-        }
+        .card-face, #card-back-face { padding: 6px 8px !important; }
+        #problem { font-size: 2.6rem; margin-bottom: 0; line-height: 1.1; }
+        #keypad-wrapper, #answer-options-wrapper { margin-top: 6px !important; }
         .keypad-btn { padding: 2px 0 !important; }
         .answer-btn { padding: 8px 0 !important; }
-        #answer-display {
-          height: 34px;
-          font-size: 1.6rem;
-        }
+        #answer-display { height: 34px; font-size: 1.6rem; }
         @media (max-width: 380px) {
           .card-container { height: min(300px, 42vh); }
           #problem { font-size: 2.4rem; }
@@ -195,7 +160,7 @@
                 </div>
                 <div id="wrong-list" class="scrollable-list overflow-x-auto overflow-y-hidden flex-grow flex flex-nowrap gap-1 content-start p-1" style="min-height: 30px;"></div>
             </div>
-            <!-- CHANGED: flex-none (was flex-grow) so the card doesn't fill all remaining height -->
+            <!-- Tight card; do not fill all remaining height -->
             <div class="card-container mt-2 flex-none">
                 <div id="card" class="relative w-full h-full card">
                     <div class="absolute w-full h-full card-face bg-white rounded-2xl shadow-xl flex flex-col items-center justify-center py-4 px-2 text-center">
@@ -292,6 +257,7 @@
         let wrongAttempts = {};
         let totalAttempts = 0, timerInterval = null, startTime = 0;
         let initialProblemSet = [];
+        let isStarting = false; // FIX: guard against double clicks
 
         // Sound Synthesis
         const correctSynth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } }).toDestination();
@@ -379,7 +345,11 @@
         }
 
         function generateProblem() {
-            if (activeProblemKey) { document.getElementById(`tag-${activeProblemKey}`)?.classList.remove('is-current-question'); }
+            // FIX: null-guard last tag
+            if (activeProblemKey) {
+                const lastTag = document.getElementById(`tag-${activeProblemKey}`);
+                if (lastTag) lastTag.classList.remove('is-current-question');
+            }
             
             if (problemsToDo.length === 0) {
                 if (problemsGottenWrongInRound.length > 0) {
@@ -416,9 +386,7 @@
                 answerDisplayEl.textContent = '';
                 keypadEl.querySelectorAll('button').forEach(btn => btn.disabled = false);
                 const enterBtn = document.getElementById('keypad-enter-btn');
-                if(enterBtn) {
-                    enterBtn.innerHTML = '✓';
-                }
+                if(enterBtn) enterBtn.innerHTML = '✓';
             } else {
                 keypadWrapper.classList.add('hidden');
                 answerOptionsWrapper.classList.remove('hidden');
@@ -429,17 +397,12 @@
         function generateAndDisplayChoices() {
             let choices = new Set([correctAnswer]);
             const [num1, num2] = currentProblem;
-             while (choices.size < 4) {
+            while (choices.size < 4) {
                 let wrongAnswer;
                 const errorType = Math.random();
-                if (errorType < 0.5) {
-                    wrongAnswer = (num1 + (Math.random() > 0.5 ? 1 : -1)) * num2;
-                } else {
-                    wrongAnswer = num1 * (num2 + (Math.random() > 0.5 ? 1 : -1));
-                }
-                if (wrongAnswer > 0 && wrongAnswer !== correctAnswer) {
-                    choices.add(wrongAnswer);
-                }
+                if (errorType < 0.5) wrongAnswer = (num1 + (Math.random() > 0.5 ? 1 : -1)) * num2;
+                else wrongAnswer = num1 * (num2 + (Math.random() > 0.5 ? 1 : -1));
+                if (wrongAnswer > 0 && wrongAnswer !== correctAnswer) choices.add(wrongAnswer);
             }
             const shuffledChoices = Array.from(choices).sort(() => Math.random() - 0.5);
             
@@ -457,7 +420,7 @@
             if (isSoundOn && !audioStarted) { await Tone.start(); audioStarted = true; }
             totalAttempts++;
             
-            const positiveEmoticons = ['😊', '🎉', '👍', '🌟', '🤩', '✅', '💯', '🚀', '🌈', '🦄', '🍕', '🎸', '🤖', '👑', '🎯', '🔥', '💎', '✨', '🎈', '🎁', '🐶', '🐱', '🦊', '🐻', '🐼', '🐨', '🦁', '🐯', '🦋', '🐞', '🍎', '🍓', '🏆', '🥇', '💡', '😎', '😇', '😉', '😋', '😍', '🥳', '🤯', '🤠', '🙌', '👏', '💪', '🧠', '🏅', '🎊', '💫', '💥', '✔️', '🛸', '⚡', '☀️', '⭐', '❤️', '🧡', '💛', '💚', '💙', '💜', '💕', '💞', '💓', '💗', '💖', '💘', '💝'];
+            const positiveEmoticons = ['😊','🎉','👍','🌟','🤩','✅','💯','🚀','🌈','🦄','🍕','🎸','🤖','👑','🎯','🔥','💎','✨','🎈','🎁','🐶','🐱','🦊','🐻','🐼','🐨','🦁','🐯','🦋','🐞','🍎','🍓','🏆','🥇','💡','😎','😇','😉','😋','😍','🥳','🤯','🤠','🙌','👏','💪','🧠','🏅','🎊','💫','💥','✔️','🛸','⚡','☀️','⭐','❤️','🧡','💛','💚','💙','💜','💕','💞','💓','💗','💖','💘','💝'];
 
             if(gameMode === 'keypad') {
                 keypadEl.querySelectorAll('button').forEach(btn => btn.disabled = true);
@@ -467,14 +430,13 @@
 
             const isCorrect = userAnswer === correctAnswer;
             const problemTag = document.getElementById(`tag-${activeProblemKey}`);
-            problemTag.classList.remove('is-current-question');
+            // FIX: null-guard problemTag
+            if (problemTag) problemTag.classList.remove('is-current-question');
 
             if (isCorrect) {
                 playCorrectSound();
                 let correctButton = buttonEl;
-                if (gameMode === 'keypad') {
-                    correctButton = document.getElementById('keypad-enter-btn');
-                }
+                if (gameMode === 'keypad') correctButton = document.getElementById('keypad-enter-btn');
 
                 if (correctButton) {
                     correctButton.classList.add('correct');
@@ -486,29 +448,31 @@
                 
                 problemsToDo = problemsToDo.filter(p => p !== currentProblem);
                 allTimeWrongProblems.delete(activeProblemKey);
-                problemTag.scrollIntoView({ behavior: "smooth", block: "center" });
-                updateProgressCount();
-                setTimeout(() => {
-                    triggerElementExplosion(problemTag);
+                if (problemTag) {
+                    problemTag.scrollIntoView({ behavior: "smooth", block: "center" });
                     setTimeout(() => {
-                        problemTag.innerHTML = positiveEmoticons[Math.floor(Math.random() * positiveEmoticons.length)];
-                        problemTag.style.fontSize = '1.2rem';
-                        problemTag.classList.remove('bg-green-500');
-                        problemTag.classList.add('bg-green-400');
-                    }, 300);
-                }, 200);
+                        triggerElementExplosion(problemTag);
+                        setTimeout(() => {
+                            problemTag.innerHTML = positiveEmoticons[Math.floor(Math.random() * positiveEmoticons.length)];
+                            problemTag.style.fontSize = '1.2rem';
+                            problemTag.classList.remove('bg-green-500');
+                            problemTag.classList.add('bg-green-400');
+                        }, 300);
+                    }, 200);
+                }
+                updateProgressCount();
                 setTimeout(nextQuestion, 1000);
             } else {
                 playIncorrectSound();
                 if(buttonEl) {
                     buttonEl.classList.add('incorrect');
                     answerOptionsEl.querySelectorAll('button').forEach(btn => {
-                        if (parseInt(btn.textContent) === correctAnswer) {
-                            btn.classList.add('correct');
-                        }
+                        if (parseInt(btn.textContent) === correctAnswer) btn.classList.add('correct');
                     });
                 }
-                problemTag.parentNode.removeChild(problemTag);
+                // FIX: null-guard remove
+                if (problemTag && problemTag.parentNode) problemTag.parentNode.removeChild(problemTag);
+
                 wrongAttempts[activeProblemKey] = (wrongAttempts[activeProblemKey] || 0) + 1;
                 if(!problemsGottenWrongInRound.some(p => p[0] === currentProblem[0] && p[1] === currentProblem[1])) {
                     problemsGottenWrongInRound.push(currentProblem);
@@ -517,7 +481,8 @@
                 problemsToDo = problemsToDo.filter(p => p !== currentProblem);
                 renderWrongList();
                 const wrongTag = document.getElementById(`wrong-tag-${activeProblemKey}`);
-                if (wrongTag) { wrongTag.scrollIntoView({ behavior: "smooth", block: "center" }); }
+                if (wrongTag) wrongTag.scrollIntoView({ behavior: "smooth", block: "center" });
+
                 resultDisplayEl.innerHTML = `<p class="fredoka text-5xl">${activeProblemKey}=${correctAnswer}</p>`;
                 cardBackFaceEl.classList.remove('hidden');
                 cardBackFaceEl.classList.add('flex');
@@ -558,7 +523,7 @@
         
         function renderPracticeRoundProgressList() {
             progressContainer.innerHTML = allProblemsForRound.map(p => {
-                 const key = `${p[0]}x${p[1]}`;
+                const key = `${p[0]}x${p[1]}`;
                 return `<div id="tag-${key}" class="problem-tag bg-green-500">${key}</div>`;
             }).join('');
         }
@@ -579,17 +544,28 @@
         }
         
         function showSetupScreen() {
+            // FIX: hard reset everything that could cause null refs / stale state
             if (timerInterval) clearInterval(timerInterval);
             winModalEl.classList.add('hidden');
             practiceModalEl.classList.add('hidden');
             gameContainerEl.classList.add('hidden');
             gameContainerEl.classList.remove('flex');
+
+            // Reset inputs
             fromTableInput.value = ''; 
             toTableInput.value = '';
-            
+
+            // Reset selection visuals & state
+            clearPresetSelection();
+            resetModeSelection();        // FIX: ensure Multiple Choice is visually & logically selected
+            gameMode = 'choice';         // FIX: ensure state matches UI
+
             // Reset setup flow
             setupStep = 'range';
             startGameBtn.textContent = 'Next';
+            startGameBtn.disabled = false; // FIX
+            isStarting = false;            // FIX
+
             rangeStepEl.classList.remove('hidden');
             modeStepEl.classList.add('hidden');
             setupErrorEl.textContent = '';
@@ -629,7 +605,7 @@
              }
         }
 
-        // Event Listeners
+        // Mode buttons
         modeChoiceBtn.addEventListener('click', () => {
             gameMode = 'choice';
             modeChoiceBtn.classList.add('mode-btn-selected');
@@ -643,42 +619,41 @@
 
         function clearPresetSelection() {
             [preset1_12Btn, preset1_10Btn, preset1_6Btn, preset6_12Btn, customBtn].forEach(btn => btn.classList.remove('preset-btn-selected'));
+            customRangeInputs.classList.add('hidden');
+            customRangeInputs.classList.remove('flex');
         }
 
+        // FIX: reset mode visuals
+        function resetModeSelection() {
+            modeChoiceBtn.classList.add('mode-btn-selected');
+            modeKeypadBtn.classList.remove('mode-btn-selected');
+        }
+
+        // Preset handlers
         preset1_12Btn.addEventListener('click', () => {
             fromTableInput.value = 1; toTableInput.value = 12;
-            clearPresetSelection();
-            preset1_12Btn.classList.add('preset-btn-selected');
-            customRangeInputs.classList.add('hidden');
+            clearPresetSelection(); preset1_12Btn.classList.add('preset-btn-selected');
             setupErrorEl.textContent = '';
         });
         preset1_10Btn.addEventListener('click', () => {
             fromTableInput.value = 1; toTableInput.value = 10;
-            clearPresetSelection();
-            preset1_10Btn.classList.add('preset-btn-selected');
-            customRangeInputs.classList.add('hidden');
+            clearPresetSelection(); preset1_10Btn.classList.add('preset-btn-selected');
             setupErrorEl.textContent = '';
         });
-         preset1_6Btn.addEventListener('click', () => {
+        preset1_6Btn.addEventListener('click', () => {
             fromTableInput.value = 1; toTableInput.value = 6;
-            clearPresetSelection();
-            preset1_6Btn.classList.add('preset-btn-selected');
-            customRangeInputs.classList.add('hidden');
+            clearPresetSelection(); preset1_6Btn.classList.add('preset-btn-selected');
             setupErrorEl.textContent = '';
         });
         preset6_12Btn.addEventListener('click', () => {
             fromTableInput.value = 6; toTableInput.value = 12;
-            clearPresetSelection();
-            preset6_12Btn.classList.add('preset-btn-selected');
-            customRangeInputs.classList.add('hidden');
+            clearPresetSelection(); preset6_12Btn.classList.add('preset-btn-selected');
             setupErrorEl.textContent = '';
         });
         customBtn.addEventListener('click', () => {
             fromTableInput.value = ''; toTableInput.value = '';
-            clearPresetSelection();
-            customBtn.classList.add('preset-btn-selected');
-            customRangeInputs.classList.remove('hidden');
-            customRangeInputs.classList.add('flex');
+            clearPresetSelection(); customBtn.classList.add('preset-btn-selected');
+            customRangeInputs.classList.remove('hidden'); customRangeInputs.classList.add('flex');
             setupErrorEl.textContent = '';
         });
 
@@ -689,55 +664,63 @@
             });
         });
 
-        // clearWrongsBtn does not exist anymore
-
+        // Start flow
         startGameBtn.addEventListener('click', () => {
+            if (isStarting) return;              // FIX: prevent double execution
+            isStarting = true;
+            startGameBtn.disabled = true;
+
             if (setupStep === 'range') {
                 const from = parseInt(fromTableInput.value || fromTableInput.placeholder);
                 const to = parseInt(toTableInput.value || toTableInput.placeholder);
+
                 let error = "";
                 if (isNaN(from) || isNaN(to)) { 
-                    if (!document.querySelector('.preset-btn-selected')) {
-                        error = "Please select a range.";
-                    }
-                }
-                else if (from < 1 || to < 1 || from > 12 || to > 12) error = "Numbers must be 1-12.";
+                    if (!document.querySelector('.preset-btn-selected')) error = "Please select a range.";
+                } else if (from < 1 || to < 1 || from > 12 || to > 12) error = "Numbers must be 1-12.";
                 else if (from > to) error = "'From' must be smaller.";
                 
                 setupErrorEl.textContent = error;
-                if (error) return;
+                if (error) {
+                    isStarting = false;
+                    startGameBtn.disabled = false; // FIX
+                    return;
+                }
 
                 rangeStepEl.classList.add('hidden');
                 modeStepEl.classList.remove('hidden');
                 startGameBtn.textContent = 'Start Game';
                 setupStep = 'mode';
+
+                isStarting = false;               // FIX
+                startGameBtn.disabled = false;    // FIX
             } else if (setupStep === 'mode') {
                 const from = parseInt(fromTableInput.value || fromTableInput.placeholder);
                 const to = parseInt(toTableInput.value || toTableInput.placeholder);
 
                 initialProblemSet = [];
-                for (let i = from; i <= to; i++) { for (let j = 1; j <= 12; j++) { initialProblemSet.push([i, j]); } }
+                for (let i = from; i <= to; i++) {
+                    for (let j = 1; j <= 12; j++) initialProblemSet.push([i, j]);
+                }
                 
                 setupModalEl.classList.add('hidden');
                 gameContainerEl.classList.remove('hidden');
                 gameContainerEl.classList.add('flex');
                 initializeRound(initialProblemSet, true);
+
+                isStarting = false;               // FIX
+                startGameBtn.disabled = false;    // FIX
             }
         });
 
         playAgainBtn.addEventListener('click', showSetupScreen);
         startPracticeBtn.addEventListener('click', () => {
-            if(problemsGottenWrongInRound.length > 0) {
-                 initializeRound(problemsGottenWrongInRound, false);
-            }
+            if(problemsGottenWrongInRound.length > 0) initializeRound(problemsGottenWrongInRound, false);
         });
         restartBtn.addEventListener('click', showSetupScreen);
         
         // Initial load
-        window.onload = () => {
-            createKeypad();
-        };
-
+        window.onload = () => { createKeypad(); };
     </script>
 </body>
 </html>
