@@ -195,7 +195,7 @@
     </div>
   </div>
 
-  <div id="practice-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div id="practice-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-16">
     <div class="modal-enter bg-white rounded-2xl shadow-2xl p-8 text-center max-w-sm w-full relative">
       <div id="practice-fireworks-container" class="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl"></div>
       <div class="text-8xl">👍</div>
@@ -206,12 +206,12 @@
       </div>
     </div>
   </div>
-  <div id="win-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div id="win-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-16">
     <div class="modal-enter bg-white rounded-2xl shadow-2xl p-8 text-center max-w-sm w-full relative">
       <div id="fireworks-container" class="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl"></div>
       <div class="text-8xl">🏆</div>
       <h2 class="text-4xl fredoka text-yellow-500 mt-4">You Did It!</h2>
-      <p id="win-message" class="text-gray-700 mt-2 text-lg"></p>
+      <div id="win-message" class="text-gray-700 mt-2 text-lg"></div>
       <div class="mt-6 flex flex-col gap-3">
         <button id="play-again-btn" class="bg-blue-500 text-white py-3 px-8 rounded-full text-lg fredoka hover:bg-blue-600 active:scale-95 transition-transform shadow-lg">Play Again</button>
       </div>
@@ -385,8 +385,33 @@
         } else {
           clearInterval(timerInterval);
           const finalTime = clockEl.textContent;
-          winMessageEl.textContent = `Finished in ${finalTime} with ${totalAttempts} attempts!`;
-          winModalEl.classList.remove('hidden'); playFanfare(true); triggerFireworks(fireworksContainer);
+          const totalQuestions = initialProblemSet.length;
+          const accuracy = totalAttempts > 0 ? Math.round((totalQuestions / totalAttempts) * 100) : 100;
+          const totalSeconds = (Date.now() - startTime) / 1000;
+          const avgTime = (totalSeconds / totalQuestions).toFixed(1);
+
+          winMessageEl.innerHTML = `
+            <div class="space-y-2 w-full">
+                <p class="flex justify-between font-bold text-gray-800 text-lg">
+                    <span>Total Time:</span>
+                    <span>${finalTime}</span>
+                </p>
+                <p class="text-center text-sm text-gray-500">
+                    Average Speed: ${avgTime} secs per question
+                </p>
+                <p class="flex justify-between font-bold text-gray-800 text-lg">
+                    <span>Accuracy:</span>
+                    <span>${accuracy}%</span>
+                </p>
+                <p class="text-center text-sm text-gray-500">
+                    Answered ${totalQuestions} questions in ${totalAttempts} attempts.
+                </p>
+            </div>
+          `;
+          
+          winModalEl.classList.remove('hidden');
+          playFanfare(true);
+          triggerFireworks(fireworksContainer);
         }
         return;
       }
@@ -467,7 +492,7 @@
       if (isSoundOn && !audioStarted) { await Tone.start(); audioStarted = true; }
       totalAttempts++;
 
-      const positive = ['😊','🎉','👍','🌟','🤩','✅','💯','🚀','🌈','🦄','🍕','🎸','🤖','👑','🎯','🔥','💎','✨','🎈','🎁','🐶','🐱','🦊','🐻','🐼','🐨','🦁','🐯','🦋','🐞','🍎','🍓','🏆','🥇','💡','😎','😇','😉','😋','😍','🥳','🤯','🤠','🙌','👏','💪','🧠','🏅','🎊','💫','💥','✔️','🛸','⚡','☀️','⭐','❤️','🧡','💛','💚','💙','💜','💕','💞','💓','💗','💖','💘','💝'];
+      const positive = ['😊','🎉','👍','🌟','🤩','✅','💯','🚀','🌈','🦄','🍕','🎸','🤖','👑','🎯','🔥','💎','✨','🎈','🎁','🐶','🐱','🦊','🐻','🐼','🐨','🦁','🐯','🦋','🐞','🍎','🍓','🏆','🥇','💡','😎','😇','😉','😋','😍','🥳','🤯','🤠','🙌','👏','💪','🧠','🏅','🎊','💫','💥','✔️','🛸','⚡','☀️','⭐','👌','✌️','🙏','🤓','😃','😄','😁','😆','🧞','🦸','🪄','🎩','🍀'];
 
       if (gameMode === 'keypad') keypadEl.querySelectorAll('button').forEach(btn => btn.disabled = true);
       else answerOptionsEl.querySelectorAll('button').forEach(btn => btn.disabled = true);
@@ -556,14 +581,18 @@
         const key = `${p[0]}x${p[1]}`; return `<div id="tag-${key}" class="problem-tag bg-green-500">${key}</div>`;
       }).join('');
     }
+    
     function renderWrongList() {
-      const arr = Array.from(allTimeWrongProblems).map(k => k.split('x').map(Number));
+      const arr = problemsGottenWrongInRound;
       wrongCountEl.textContent = arr.length;
       wrongListEl.innerHTML = arr.sort((a,b)=>(a[0]*100+a[1])-(b[0]*100+b[1]))
         .map(p => `<div id="wrong-tag-${p[0]}x${p[1]}" class="problem-tag bg-orange-400">${p[0]}x${p[1]}</div>`).join('');
     }
+
     function updateProgressCount() {
-      progressCountEl.textContent = `${initialProblemSet.length - allTimeWrongProblems.size}/${initialProblemSet.length}`;
+      const totalInRound = allProblemsForRound.length;
+      const correctInRound = totalInRound - problemsToDo.length - problemsGottenWrongInRound.length;
+      progressCountEl.textContent = `${correctInRound}/${totalInRound}`;
     }
 
     function showSetupScreen() {
