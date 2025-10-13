@@ -394,16 +394,43 @@
       updateCardHeight();
     }
 
+    // FIX: Rewrote this function to be more robust and prevent infinite loops on edge cases like '1x1'.
     function generateAndDisplayChoices() {
       let choices = new Set([correctAnswer]);
       const [num1, num2] = currentProblem;
-      while (choices.size < 4) {
+      let attempts = 0; // Failsafe counter
+
+      // Try to generate believable wrong answers first
+      while (choices.size < 4 && attempts < 50) {
         let wrongAnswer;
         const errorType = Math.random();
-        wrongAnswer = (errorType < 0.5) ? (num1 + (Math.random() > 0.5 ? 1 : -1)) * num2
-                                        : num1 * (num2 + (Math.random() > 0.5 ? 1 : -1));
-        if (wrongAnswer > 0 && wrongAnswer !== correctAnswer) choices.add(wrongAnswer);
+
+        if (errorType < 0.33) {
+          // Off-by-one on the first number
+          wrongAnswer = (num1 + (Math.random() > 0.5 ? 1 : -1)) * num2;
+        } else if (errorType < 0.66) {
+          // Off-by-one on the second number
+          wrongAnswer = num1 * (num2 + (Math.random() > 0.5 ? 1 : -1));
+        } else {
+          // Add or subtract from the correct answer
+          wrongAnswer = correctAnswer + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
+        }
+        
+        if (wrongAnswer >= 0 && wrongAnswer !== correctAnswer) { // Allow 0 as a choice
+          choices.add(wrongAnswer);
+        }
+        attempts++;
       }
+
+      // Failsafe: If we still don't have enough, add random numbers
+      while (choices.size < 4) {
+        let randomOffset = Math.floor(Math.random() * 5) + 1;
+        let fallbackAnswer = correctAnswer + (Math.random() > 0.5 ? randomOffset : -randomOffset);
+        if (fallbackAnswer >= 0) {
+          choices.add(fallbackAnswer);
+        }
+      }
+      
       const shuffled = Array.from(choices).sort(() => Math.random() - 0.5);
       answerOptionsEl.innerHTML = '';
       shuffled.forEach(choice => {
@@ -521,14 +548,27 @@
 
     function showSetupScreen() {
       if (timerInterval) clearInterval(timerInterval);
-      winModalEl.classList.add('hidden'); practiceModalEl.classList.add('hidden');
-      gameContainerEl.classList.add('hidden'); gameContainerEl.classList.remove('flex');
+      winModalEl.classList.add('hidden');
+      practiceModalEl.classList.add('hidden');
+      gameContainerEl.classList.add('hidden');
+      gameContainerEl.classList.remove('flex');
 
-      fromTableInput.value = ''; toTableInput.value = '';
-      clearPresetSelection(); resetModeSelection(); gameMode = 'choice';
+      // FIX: Reset the card's flip state when restarting
+      cardEl.classList.remove('is-flipped');
 
-      setupStep = 'range'; startGameBtn.textContent = 'Next'; startGameBtn.disabled = false; isStarting = false;
-      rangeStepEl.classList.remove('hidden'); modeStepEl.classList.add('hidden'); setupErrorEl.textContent = '';
+      fromTableInput.value = '';
+      toTableInput.value = '';
+      clearPresetSelection();
+      resetModeSelection();
+      gameMode = 'choice';
+
+      setupStep = 'range';
+      startGameBtn.textContent = 'Next';
+      startGameBtn.disabled = false;
+      isStarting = false;
+      rangeStepEl.classList.remove('hidden');
+      modeStepEl.classList.add('hidden');
+      setupErrorEl.textContent = '';
       setupModalEl.classList.remove('hidden');
 
       gameContainerEl.classList.add('is-choice');
@@ -567,12 +607,9 @@
       customRangeInputs.classList.remove('hidden'); customRangeInputs.classList.add('flex'); setupErrorEl.textContent='';
     });
     
-    // THIS IS THE FIX for the custom input fields disappearing
     [fromTableInput, toTableInput].forEach(input => {
       input.addEventListener('input', () => {
-        // De-select only the preset range buttons
         [preset1_12Btn, preset1_10Btn, preset1_6Btn, preset6_12Btn].forEach(btn => btn.classList.remove('preset-btn-selected'));
-        // Ensure the main "Custom" button stays selected
         customBtn.classList.add('preset-btn-selected');
       });
     });
