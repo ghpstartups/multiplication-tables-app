@@ -97,14 +97,12 @@
   </style>
 </head>
 <body class="bg-blue-100 flex flex-col items-center justify-center min-h-screen p-1">
-  <!-- Orientation Lock -->
   <div id="orientation-lock" class="hidden fixed inset-0 bg-blue-100 z-50 flex-col items-center justify-center text-center p-4">
     <svg class="w-16 h-16 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" /></svg>
     <h2 class="text-2xl fredoka text-blue-800 mt-4">Please rotate your device</h2>
     <p class="text-blue-600 mt-2">This game is best played in portrait mode.</p>
   </div>
 
-  <!-- Setup Modal -->
   <div id="setup-modal" class="modal-enter bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 text-center max-w-sm w-full z-20">
     <div id="range-step">
       <h2 class="text-3xl fredoka text-blue-800">Choose Your Tables!</h2>
@@ -137,7 +135,6 @@
     <button id="start-game-btn" class="w-full bg-blue-500 text-white py-3 px-8 rounded-full text-2xl fredoka hover:bg-blue-600 active:scale-95 transition-transform shadow-lg">Next</button>
   </div>
 
-  <!-- Game Container -->
   <div id="game-container" class="w-full mx-auto flex flex-col h-full hidden">
     <div class="text-center flex-shrink-0 pt-2">
       <h1 class="text-2xl md:text-3xl fredoka text-blue-800">Multiplication Mastery</h1>
@@ -158,7 +155,6 @@
         <div id="wrong-list" class="scrollable-list overflow-x-auto overflow-y-hidden flex-grow flex flex-nowrap gap-1 content-start p-1" style="min-height: 30px;"></div>
       </div>
 
-      <!-- Card (content-sized in Multiple Choice, capped in Keypad) -->
       <div class="card-container mt-2 flex-none">
         <div id="card" class="relative w-full h-full card">
           <div class="absolute w-full h-full card-face bg-white rounded-2xl shadow-xl flex flex-col items-center justify-center py-4 px-2 text-center">
@@ -181,7 +177,6 @@
     </div>
   </div>
 
-  <!-- Modals -->
   <div id="practice-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
     <div class="modal-enter bg-white rounded-2xl shadow-2xl p-8 text-center max-w-sm w-full relative">
       <div id="practice-fireworks-container" class="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl"></div>
@@ -195,7 +190,7 @@
   </div>
   <div id="win-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
     <div class="modal-enter bg-white rounded-2xl shadow-2xl p-8 text-center max-w-sm w-full relative">
-      <div id="fireworks-container" class="absolute inset-0 pointer-events-none overflow-hidden rounded-2l"></div>
+      <div id="fireworks-container" class="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl"></div>
       <div class="text-8xl">🏆</div>
       <h2 class="text-4xl fredoka text-yellow-500 mt-4">You Did It!</h2>
       <p id="win-message" class="text-gray-700 mt-2 text-lg"></p>
@@ -554,8 +549,6 @@
       p.style.setProperty('--transform-to',`translate(${Math.random()*80-40}px, ${Math.random()*80-40}px) scale(0)`); document.body.appendChild(p);
       setTimeout(()=>p.remove(),600);} }
 
-    function renderFullProgressList(){ progressContainer.innerHTML = initialProblemSet.map(p=>`<div id="tag-${p[0]}x${p[1]}" class="problem-tag bg-green-500">${p[0]}x${p[1]}</div>`).join(''); }
-    function renderPracticeRoundProgressList(){ progressContainer.innerHTML = allProblemsForRound.map(p=>`<div id="tag-${p[0]}x${p[1]}" class="problem-tag bg-green-500">${p[0]}x${p[1]}</div>`).join(''); }
     function clearPresetSelection() {
       [preset1_12Btn, preset1_10Btn, preset1_6Btn, preset6_12Btn, customBtn].forEach(btn => btn.classList.remove('preset-btn-selected'));
       customRangeInputs.classList.add('hidden'); customRangeInputs.classList.remove('flex');
@@ -635,43 +628,12 @@
     // Resize/orientation updates
     window.addEventListener('resize', () => updateCardHeight());
     window.addEventListener('orientationchange', () => setTimeout(updateCardHeight, 150));
-
-    // Clock
-    function updateClock() {
-      const minutes = String(Math.floor(((Date.now()-startTime)/1000)/60)).padStart(2,'0');
-      const seconds = String(Math.floor(((Date.now()-startTime)/1000)%60)).padStart(2,'0');
-      clockEl.textContent = `${minutes}:${seconds}`;
-    }
-
-    // Effects + lists
-    function triggerFireworks(container){
-      container.innerHTML=''; for(let i=0;i<30;i++){ const p=document.createElement('div'); p.className='particle';
-      const s=Math.floor(Math.random()*10+5)+'px'; p.style.width=s; p.style.height=s;
-      p.style.backgroundColor=['#ffc700','#ff0000','#22c55e','#3b82f6','#8b5cf6'][Math.floor(Math.random()*5)];
-      p.style.left='50%'; p.style.top='50%'; p.style.setProperty('--transform-to',`translate(${Math.random()*200-100}px, ${Math.random()*200-100}px) scale(0)`);
-      container.appendChild(p); setTimeout(()=>p.remove(),1000);} }
-    function triggerElementExplosion(element){ const rect=element.getBoundingClientRect(); const colors=['#FFD700','#FFC300','#FFFFFF','#FFBF00','#f97316'];
-      for(let i=0;i<20;i++){ const p=document.createElement('div'); p.className='tag-particle';
-      const s=Math.floor(Math.random()*6+3)+'px'; p.style.width=s; p.style.height=s;
-      p.style.backgroundColor=colors[Math.floor(Math.random()*colors.length)];
-      p.style.left=`${rect.left+rect.width/2}px`; p.style.top=`${rect.top+rect.height/2}px`;
-      p.style.setProperty('--transform-to',`translate(${Math.random()*80-40}px, ${Math.random()*80-40}px) scale(0)`); document.body.appendChild(p);
-      setTimeout(()=>p.remove(),600);} }
-
-    function renderFullProgressList(){ progressContainer.innerHTML = initialProblemSet.map(p=>`<div id="tag-${p[0]}x${p[1]}" class="problem-tag bg-green-500">${p[0]}x${p[1]}</div>`).join(''); }
-    function renderPracticeRoundProgressList(){ progressContainer.innerHTML = allProblemsForRound.map(p=>`<div id="tag-${p[0]}x${p[1]}" class="problem-tag bg-green-500">${p[0]}x${p[1]}</div>`).join(''); }
-    function renderWrongList(){
-      const arr=Array.from(allTimeWrongProblems).map(k=>k.split('x').map(Number));
-      wrongCountEl.textContent=arr.length;
-      wrongListEl.innerHTML=arr.sort((a,b)=>(a[0]*100+a[1])-(b[0]*100+b[1])).map(p=>`<div id="wrong-tag-${p[0]}x${p[1]}" class="problem-tag bg-orange-400">${p[0]}x${p[1]}</div>`).join('');
-    }
-    function updateProgressCount(){ progressCountEl.textContent = `${initialProblemSet.length - allTimeWrongProblems.size}/${initialProblemSet.length}`; }
-
+    
     // Init
-    window.onload = () => { 
-      createKeypad(); 
-      gameContainerEl.classList.add('is-choice'); 
-      updateCardHeight(); 
+    window.onload = () => {
+      createKeypad();
+      gameContainerEl.classList.add('is-choice');
+      updateCardHeight();
     };
   </script>
 </body>
