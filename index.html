@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
     body { font-family: 'Inter', sans-serif; touch-action: manipulation; overflow: hidden; position: fixed; width: 100%; height: 100%; margin: 0; padding-top: 1rem; }
-    .fredoka { font-family: 'Fredoka One', cursive; }
+    .fredoka { font-family: 'Fredoka One', cursive; font-variant-numeric: tabular-nums; }
     .card { transform-style: preserve-3d; transition: transform 0.6s, opacity 0.3s ease; }
     .card.is-flipped { transform: rotateY(180deg); }
     .card-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
@@ -19,7 +19,8 @@
     .modal-enter { animation: modal-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     @keyframes modal-in { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
 
-    .problem-tag { font-family: 'Fredoka One', cursive; padding: 1px 6px; border-radius: 6px; font-size: 0.9rem; min-height: 1.8rem;
+    .problem-tag { font-family: 'Fredoka One', cursive; padding: 1px 6px; border-radius: 6px; font-size: 0.9rem; height: 1.8rem;
+      width: 3.5rem; min-width: 3.5rem;
       box-shadow: 0 1px 2px rgba(0,0,0,0.1); color: white; transition: background-color 0.3s ease, font-size 0.3s ease;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .is-current-question { animation: pulse-rainbow 2.5s infinite ease-in-out; }
@@ -44,7 +45,6 @@
       }
     }
 
-    /* FIX: Pauses the glowing animation when the body has the 'game-is-paused' class */
     .game-is-paused .is-current-question {
         animation-play-state: paused;
     }
@@ -118,7 +118,7 @@
     <p class="text-blue-600 mt-2">This game is best played in portrait mode.</p>
   </div>
 
-  <div id="setup-modal" class="modal-enter bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 text-center max-w-sm w-full z-20">
+  <div id="setup-modal" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 text-center max-w-sm w-full z-20">
     <div id="range-step">
       <h2 class="text-2xl md:text-3xl fredoka text-blue-800">Choose Your Tables!</h2>
       <div class="grid grid-cols-2 gap-2 my-4">
@@ -168,7 +168,7 @@
     <button id="start-game-btn" class="w-full bg-blue-500 text-white py-3 px-8 rounded-full text-2xl fredoka hover:bg-blue-600 active:scale-95 transition-transform shadow-lg">Next</button>
   </div>
 
-  <div id="game-container" class="w-full mx-auto flex flex-col hidden">
+  <div id="game-container" class="w-full mx-auto flex flex-col hidden modal-enter">
     <div class="text-center flex-shrink-0 pt-2">
       <h1 class="text-2xl md:text-3xl fredoka text-blue-800">Multiplication Mastery</h1>
       <div class="flex items-center justify-center gap-4">
@@ -286,7 +286,7 @@
     // State
     let setupStep = 'range';
     let gameMode = null;
-    let currentInput = '', isSoundOn = true, audioStarted = false;
+    let currentInput = '', isSoundOn = true;
     let currentProblem, correctAnswer, activeProblemKey = null;
     let allProblemsForRound = [], problemsToDo = [], problemsGottenWrongInRound = [];
     let allTimeWrongProblems = new Set();
@@ -295,6 +295,9 @@
     let initialProblemSet = [];
     let isStarting = false;
     let isPaused = false, elapsedTimeBeforePause = 0;
+    
+    const MASTER_EMOJI_LIST = ['😊','🎉','👍','🌟','🤩','✅','💯','🚀','🌈','🦄','🍕','🎸','🤖','👑','🎯','🔥','💎','✨','🎈','🎁','🐶','🐱','🦊','🐻','🐼','🐨','🦁','🐯','🦋','🐞','🍎','🍓','🏆','🥇','💡','😎','😇','😉','😋','😍','🥳','🤯','🤠','🙌','👏','💪','🧠','🏅','🎊','💫','💥','✔️','🛸','⚡','☀️','⭐','👌','✌️','🙏','🤓','😃','😄','😁','😆','🧞','🦸','🪄','🎩','🍀'];
+    let emojiPool = [];
 
     // Tone
     const correctSynth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } }).toDestination();
@@ -314,6 +317,13 @@
         playSound(fanfareSynth, ['D5','A5','D6','F6'], '8n', .8);
         playSound(fanfareSynth, ['G5','B5','D6','G6'], '4n', 1.0);
       }
+    }
+    
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
     }
     
     function pauseGame() {
@@ -336,6 +346,13 @@
         pauseBtn.classList.remove('is-paused-glow');
         cardEl.classList.remove('opacity-50', 'pointer-events-none');
         document.body.classList.remove('game-is-paused');
+    }
+
+    // FIX: New helper function to re-trigger CSS animations
+    function reanimate(element) {
+        element.classList.remove('modal-enter');
+        void element.offsetWidth; // This is a trick to force the browser to reflow the element
+        element.classList.add('modal-enter');
     }
 
     function px(n){ return `${Math.round(n)}px`; }
@@ -399,16 +416,20 @@
       problemsToDo = [...allProblemsForRound];
       problemsGottenWrongInRound = [];
       
+      document.body.classList.remove('game-is-paused');
       isPaused = false;
       elapsedTimeBeforePause = 0;
       pauseBtn.textContent = 'Pause';
       pauseBtn.classList.remove('is-paused-glow');
       cardEl.classList.remove('opacity-50', 'pointer-events-none');
-      document.body.classList.remove('game-is-paused');
 
       if (isFirstRound) {
         allTimeWrongProblems.clear(); wrongAttempts = {}; totalAttempts = 0; renderFullProgressList();
-      } else { renderPracticeRoundProgressList(); }
+        emojiPool = [...MASTER_EMOJI_LIST];
+        shuffleArray(emojiPool);
+      } else { 
+        renderPracticeRoundProgressList(); 
+      }
 
       winModalEl.classList.add('hidden'); practiceModalEl.classList.add('hidden');
 
@@ -427,7 +448,10 @@
 
       if (problemsToDo.length === 0) {
         if (problemsGottenWrongInRound.length > 0) {
-          practiceModalEl.classList.remove('hidden'); playFanfare(); triggerFireworks(practiceFireworksContainer);
+          practiceModalEl.classList.remove('hidden');
+          reanimate(practiceModalEl.querySelector('.modal-enter'));
+          playFanfare();
+          triggerFireworks(practiceFireworksContainer);
         } else {
           clearInterval(timerInterval);
           const finalTime = clockEl.textContent;
@@ -456,6 +480,7 @@
           `;
           
           winModalEl.classList.remove('hidden');
+          reanimate(winModalEl.querySelector('.modal-enter'));
           playFanfare(true);
           triggerFireworks(fireworksContainer);
         }
@@ -500,7 +525,7 @@
         } else {
           wrongAnswer = correctAnswer + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
         }
-        if (wrongAnswer >= 0 && wrongAnswer !== correctAnswer) {
+        if (wrongAnswer > 0 && wrongAnswer !== correctAnswer) {
           choices.add(wrongAnswer);
         }
         attempts++;
@@ -508,7 +533,7 @@
       while (choices.size < 4) {
         let randomOffset = Math.floor(Math.random() * 5) + 1;
         let fallbackAnswer = correctAnswer + (Math.random() > 0.5 ? randomOffset : -randomOffset);
-        if (fallbackAnswer >= 0) {
+        if (fallbackAnswer > 0) {
           choices.add(fallbackAnswer);
         }
       }
@@ -529,10 +554,15 @@
     }
 
     async function checkAnswer(userAnswer, buttonEl=null) {
-      if (isSoundOn && !audioStarted) { await Tone.start(); audioStarted = true; }
+      if (isSoundOn) { await Tone.start(); }
       totalAttempts++;
-      const positive = ['😊','🎉','👍','🌟','🤩','✅','💯','🚀','🌈','🦄','🍕','🎸','🤖','👑','🎯','🔥','💎','✨','🎈','🎁','🐶','🐱','🦊','🐻','🐼','🐨','🦁','🐯','🦋','🐞','🍎','🍓','🏆','🥇','💡','😎','😇','😉','😋','😍','🥳','🤯','🤠','🙌','👏','💪','🧠','🏅','🎊','💫','💥','✔️','🛸','⚡','☀️','⭐','👌','✌️','🙏','🤓','😃','😄','😁','😆','🧞','🦸','🪄','🎩','🍀'];
-      const randomEmoji = positive[Math.floor(Math.random() * positive.length)];
+      
+      if (emojiPool.length === 0) {
+        emojiPool = [...MASTER_EMOJI_LIST];
+        shuffleArray(emojiPool);
+      }
+      const randomEmoji = emojiPool.pop();
+
       if (gameMode === 'keypad') keypadEl.querySelectorAll('button').forEach(btn => btn.disabled = true);
       else answerOptionsEl.querySelectorAll('button').forEach(btn => btn.disabled = true);
       const isCorrect = userAnswer === correctAnswer;
@@ -666,6 +696,7 @@
       soundStepEl.classList.add('hidden');
       setupErrorEl.textContent = '';
       setupModalEl.classList.remove('hidden');
+      reanimate(setupModalEl);
 
       gameContainerEl.classList.add('is-choice');
       updateCardHeight();
@@ -722,19 +753,32 @@
       startGameBtn.disabled = true;
       setupErrorEl.textContent = '';
       if (setupStep === 'range') {
-        const from = parseInt(fromTableInput.value || fromTableInput.placeholder);
-        const to   = parseInt(toTableInput.value   || toTableInput.placeholder);
+        let from, to;
         let error = "";
-        if (isNaN(from) || isNaN(to)) {
-          if (!document.querySelector('.preset-btn-selected')) error = "Please select a range.";
-        } else if (from < 1 || to < 1 || from > 12 || to > 12) error = "Numbers must be 1-12.";
-        else if (from > to) error = "'From' must be smaller.";
+        if (customBtn.classList.contains('preset-btn-selected')) {
+            from = parseInt(fromTableInput.value);
+            to = parseInt(toTableInput.value);
+            if (isNaN(from) || isNaN(to)) {
+                error = "Please enter a custom range.";
+            }
+        } else {
+            from = parseInt(fromTableInput.value || fromTableInput.placeholder);
+            to = parseInt(toTableInput.value   || toTableInput.placeholder);
+            if (isNaN(from) || isNaN(to)) {
+              if (!document.querySelector('.preset-btn-selected')) error = "Please select a range.";
+            }
+        }
+        if (!error) {
+            if (from < 1 || to < 1 || from > 12 || to > 12) error = "Numbers must be 1-12.";
+            else if (from > to) error = "'From' must be smaller.";
+        }
         if (error) {
           setupErrorEl.textContent = error;
           isStarting=false; startGameBtn.disabled=false; return;
         }
         rangeStepEl.classList.add('hidden');
         modeStepEl.classList.remove('hidden');
+        reanimate(modeStepEl);
         setupStep = 'mode';
       } else if (setupStep === 'mode') {
         if (!gameMode) {
@@ -743,6 +787,7 @@
         }
         modeStepEl.classList.add('hidden');
         soundStepEl.classList.remove('hidden');
+        reanimate(soundStepEl);
         startGameBtn.textContent = 'Start Game';
         setupStep = 'sound';
       } else if (setupStep === 'sound') {
@@ -753,6 +798,7 @@
         setupModalEl.classList.add('hidden');
         gameContainerEl.classList.remove('hidden');
         gameContainerEl.classList.add('flex');
+        reanimate(gameContainerEl);
         if (gameMode === 'choice') {
             gameContainerEl.classList.add('is-choice');
         } else {
