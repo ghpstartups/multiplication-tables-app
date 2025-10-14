@@ -119,7 +119,7 @@
   </div>
 
   <div id="setup-modal" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 text-center max-w-sm w-full z-20">
-    <div id="range-step">
+    <div id="range-step" class="modal-enter">
       <h2 class="text-2xl md:text-3xl fredoka text-blue-800">Choose Your Tables!</h2>
       <div class="grid grid-cols-2 gap-2 my-4">
         <button id="preset-1-6" class="preset-btn py-2 px-4 rounded-lg border-2 border-gray-300 bg-gray-100">1 to 6</button>
@@ -139,14 +139,14 @@
         </div>
       </div>
     </div>
-    <div id="mode-step" class="hidden">
+    <div id="mode-step" class="hidden modal-enter">
       <h2 class="text-2xl md:text-3xl fredoka text-blue-800">Choose Game Mode</h2>
       <div class="my-4 flex flex-col gap-2">
         <button id="mode-choice-btn" class="py-2 px-4 rounded-lg border-2 border-gray-300">Multiple Choice</button>
         <button id="mode-keypad-btn" class="py-2 px-4 rounded-lg border-2 border-gray-300">Type Your Answer</button>
       </div>
     </div>
-    <div id="sound-step" class="hidden">
+    <div id="sound-step" class="hidden modal-enter">
         <h2 class="text-2xl md:text-3xl fredoka text-blue-800">Sound Settings</h2>
         <div class="my-4 flex justify-center gap-4">
             <button id="sound-on-btn" class="py-2 px-8 rounded-lg border-2 border-gray-300">
@@ -229,7 +229,8 @@
       <h2 class="text-4xl fredoka text-yellow-500 mt-4">You Did It!</h2>
       <div id="win-message" class="text-gray-700 mt-2 text-lg"></div>
       <div class="mt-6 flex flex-col gap-3">
-        <button id="play-again-btn" class="bg-blue-500 text-white py-3 px-8 rounded-full text-lg fredoka hover:bg-blue-600 active:scale-95 transition-transform shadow-lg">Play Again</button>
+        <button id="win-play-again-btn" class="py-3 px-8 rounded-full text-lg fredoka bg-blue-500 text-white hover:bg-blue-600 active:scale-95 transition-transform shadow-lg">Play Again</button>
+        <button id="win-start-over-btn" class="py-3 px-8 rounded-full text-lg fredoka bg-gray-500 text-white hover:bg-gray-600 active:scale-95 transition-transform shadow-lg">Start Over</button>
       </div>
     </div>
   </div>
@@ -270,7 +271,8 @@
     const answerOptionsEl = document.getElementById('answer-options');
 
     const winModalEl = document.getElementById('win-modal');
-    const playAgainBtn = document.getElementById('play-again-btn');
+    const winPlayAgainBtn = document.getElementById('win-play-again-btn');
+    const winStartOverBtn = document.getElementById('win-start-over-btn');
     const practiceModalEl = document.getElementById('practice-modal');
     const startPracticeBtn = document.getElementById('start-practice-btn');
     const restartBtn = document.getElementById('restart-btn');
@@ -348,10 +350,9 @@
         document.body.classList.remove('game-is-paused');
     }
 
-    // FIX: New helper function to re-trigger CSS animations
     function reanimate(element) {
         element.classList.remove('modal-enter');
-        void element.offsetWidth; // This is a trick to force the browser to reflow the element
+        void element.offsetWidth;
         element.classList.add('modal-enter');
     }
 
@@ -431,7 +432,8 @@
         renderPracticeRoundProgressList(); 
       }
 
-      winModalEl.classList.add('hidden'); practiceModalEl.classList.add('hidden');
+      winModalEl.classList.add('hidden');
+      practiceModalEl.classList.add('hidden');
 
       if (isFirstRound) {
         if (timerInterval) clearInterval(timerInterval);
@@ -696,7 +698,7 @@
       soundStepEl.classList.add('hidden');
       setupErrorEl.textContent = '';
       setupModalEl.classList.remove('hidden');
-      reanimate(setupModalEl);
+      reanimate(rangeStepEl);
 
       gameContainerEl.classList.add('is-choice');
       updateCardHeight();
@@ -845,7 +847,16 @@
         }
     });
 
-    playAgainBtn.addEventListener('click', showSetupScreen);
+    // FIX: Added listeners for new win-screen buttons
+    winPlayAgainBtn.addEventListener('click', () => {
+        winModalEl.classList.add('hidden');
+        gameContainerEl.classList.remove('hidden');
+        gameContainerEl.classList.add('flex');
+        reanimate(gameContainerEl);
+        initializeRound(initialProblemSet, true);
+    });
+    winStartOverBtn.addEventListener('click', showSetupScreen);
+
     startPracticeBtn.addEventListener('click', () => { if (problemsGottenWrongInRound.length > 0) initializeRound(problemsGottenWrongInRound, false); });
     restartBtn.addEventListener('click', showSetupScreen);
 
