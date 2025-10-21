@@ -130,22 +130,20 @@
       </div>
     </div>
     <div id="range-step" class="hidden modal-enter">
-      <h2 class="text-2xl md:text-3xl fredoka text-blue-800">Choose Your Numbers!</h2>
+      <h2 class="text-2xl md:text-3xl fredoka text-blue-800">Choose Your Range</h2>
       <div class="grid grid-cols-2 gap-2 my-4">
-        <button id="preset-1-20" class="preset-btn py-2 px-4 rounded-lg border-2 border-gray-300 bg-gray-100">1 to 20</button>
-        <button id="preset-20-50" class="preset-btn py-2 px-4 rounded-lg border-2 border-gray-300 bg-gray-100">20 to 50</button>
-        <button id="preset-1-50" class="preset-btn py-2 px-4 rounded-lg border-2 border-gray-300 bg-gray-100">1 to 50</button>
-        <button id="preset-50-100" class="preset-btn py-2 px-4 rounded-lg border-2 border-gray-300 bg-gray-100">50 to 100</button>
+        <button id="preset-10" class="preset-btn py-2 px-4 rounded-lg border-2 border-gray-300 bg-gray-100">Up to 10s</button>
+        <button id="preset-12" class="preset-btn py-2 px-4 rounded-lg border-2 border-gray-300 bg-gray-100">Up to 12s</button>
       </div>
       <button id="custom-btn" class="preset-btn py-2 px-4 rounded-lg border-2 border-gray-300 bg-gray-100 w-full">Custom</button>
       <div id="custom-range-inputs" class="hidden items-center justify-center gap-4 mt-4">
         <div class="flex flex-col items-center">
-          <label id="from-label" for="from-table" class="text-gray-700">Min Sum</label>
+          <label id="from-label" for="from-table" class="text-gray-700">From</label>
           <input type="number" id="from-table" placeholder="1" class="w-20 text-center text-lg py-1 px-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500" inputmode="none" />
         </div>
         <div class="flex flex-col items-center">
-          <label id="to-label" for="to-table" class="text-gray-700">Max Sum</label>
-          <input type="number" id="to-table" placeholder="20" class="w-20 text-center text-lg py-1 px-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500" inputmode="none" />
+          <label id="to-label" for="to-table" class="text-gray-700">To</label>
+          <input type="number" id="to-table" placeholder="12" class="w-20 text-center text-lg py-1 px-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500" inputmode="none" />
         </div>
       </div>
     </div>
@@ -180,7 +178,7 @@
 
   <div id="game-container" class="w-full mx-auto flex flex-col hidden modal-enter">
     <div class="text-center flex-shrink-0 pt-2">
-      <h1 id="game-title" class="text-2xl md:text-3xl fredoka text-blue-800">Addition Mastery</h1>
+      <h1 id="game-title" class="text-2xl md:text-3xl fredoka text-blue-800">Math Mastery</h1>
       <div class="flex items-center justify-center gap-4">
         <button id="pause-btn" class="bg-yellow-600 text-white py-1 px-4 rounded-full text-xs hover:bg-yellow-700 active:scale-95 transition-transform shadow-md">Pause</button>
         <p id="clock" class="text-xl fredoka text-blue-700">00:00</p>
@@ -261,10 +259,8 @@
     const toTableInput = document.getElementById('to-table');
     const fromLabel = document.getElementById('from-label');
     const toLabel = document.getElementById('to-label');
-    const preset1_20Btn = document.getElementById('preset-1-20');
-    const preset20_50Btn = document.getElementById('preset-20-50');
-    const preset1_50Btn = document.getElementById('preset-1-50');
-    const preset50_100Btn = document.getElementById('preset-50-100');
+    const preset10Btn = document.getElementById('preset-10');
+    const preset12Btn = document.getElementById('preset-12');
     const customBtn = document.getElementById('custom-btn');
     const customRangeInputs = document.getElementById('custom-range-inputs');
     const setupErrorEl = document.getElementById('setup-error');
@@ -616,7 +612,7 @@
                 wrongAnswer = correctAnswer + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
             }
         }
-        if (wrongAnswer > 0 && wrongAnswer !== correctAnswer) {
+        if (wrongAnswer >= 0 && wrongAnswer !== correctAnswer) { // Allow 0 as an answer for subtraction
           choices.add(wrongAnswer);
         }
         attempts++;
@@ -624,7 +620,7 @@
       while (choices.size < 4) {
         let randomOffset = Math.floor(Math.random() * 5) + 1;
         let fallbackAnswer = correctAnswer + (Math.random() > 0.5 ? randomOffset : -randomOffset);
-        if (fallbackAnswer > 0) {
+        if (fallbackAnswer >= 0) {
           choices.add(fallbackAnswer);
         }
       }
@@ -816,7 +812,7 @@
       setTimeout(()=>p.remove(),600);} }
 
     function clearPresetSelection() {
-      [preset1_20Btn, preset20_50Btn, preset1_50Btn, preset50_100Btn, customBtn].forEach(btn => btn.classList.remove('preset-btn-selected'));
+      [preset10Btn, preset12Btn, customBtn].forEach(btn => btn.classList.remove('preset-btn-selected'));
       customRangeInputs.classList.add('hidden'); customRangeInputs.classList.remove('flex');
     }
     function resetModeSelection() {
@@ -833,10 +829,8 @@
         isSoundOn = true;
     }
 
-    preset1_20Btn.addEventListener('click', () => { fromTableInput.value=1; toTableInput.value=20; clearPresetSelection(); preset1_20Btn.classList.add('preset-btn-selected'); setupErrorEl.textContent=''; });
-    preset20_50Btn.addEventListener('click', () => { fromTableInput.value=20; toTableInput.value=50; clearPresetSelection(); preset20_50Btn.classList.add('preset-btn-selected'); setupErrorEl.textContent=''; });
-    preset1_50Btn.addEventListener('click', () => { fromTableInput.value=1; toTableInput.value=50 ; clearPresetSelection(); preset1_50Btn.classList.add('preset-btn-selected'); setupErrorEl.textContent=''; });
-    preset50_100Btn.addEventListener('click', () => { fromTableInput.value=50; toTableInput.value=100; clearPresetSelection(); preset50_100Btn.classList.add('preset-btn-selected'); setupErrorEl.textContent=''; });
+    preset10Btn.addEventListener('click', () => { fromTableInput.value=1; toTableInput.value=10; clearPresetSelection(); preset10Btn.classList.add('preset-btn-selected'); setupErrorEl.textContent=''; });
+    preset12Btn.addEventListener('click', () => { fromTableInput.value=1; toTableInput.value=12; clearPresetSelection(); preset12Btn.classList.add('preset-btn-selected'); setupErrorEl.textContent=''; });
     
     customBtn.addEventListener('click', () => {
       fromTableInput.value=''; toTableInput.value='';
@@ -879,26 +873,24 @@
         reanimate(rangeStepEl);
         setupStep = 'range';
       } else if (setupStep === 'range') {
-        let minVal, maxVal;
+        let from, to;
         let error = "";
         if (customBtn.classList.contains('preset-btn-selected')) {
-            minVal = parseInt(fromTableInput.value);
-            maxVal = parseInt(toTableInput.value);
-            if (isNaN(minVal) || isNaN(maxVal)) {
+            from = parseInt(fromTableInput.value);
+            to = parseInt(toTableInput.value);
+            if (isNaN(from) || isNaN(to)) {
                 error = "Please enter a custom range.";
             }
         } else {
-            minVal = parseInt(fromTableInput.value || fromTableInput.placeholder);
-            maxVal = parseInt(toTableInput.value   || toTableInput.placeholder);
-            if (isNaN(minVal) || isNaN(maxVal)) {
+            from = parseInt(fromTableInput.value || fromTableInput.placeholder);
+            to = parseInt(toTableInput.value   || toTableInput.placeholder);
+            if (isNaN(from) || isNaN(to)) {
               if (!document.querySelector('.preset-btn-selected')) error = "Please select a range.";
             }
         }
         if (!error) {
-            const maxRange = (gameOperation === 'add') ? 200 : 100;
-            const rangeError = (gameOperation === 'add') ? "Answers must be 1-200." : "Numbers must be 1-100.";
-            if (minVal < 0 || maxVal < 0 || minVal > maxRange || maxVal > maxRange) error = rangeError;
-            else if (minVal > maxVal) error = "'Min' must be smaller than 'Max'.";
+            if (from < 1 || to < 1 || from > 12 || to > 12) error = "Numbers must be 1-12.";
+            else if (from > to) error = "'From' must be smaller than 'To'.";
         }
         if (error) {
           setupErrorEl.textContent = error;
@@ -920,50 +912,42 @@
         setupStep = 'sound';
       } else if (setupStep === 'sound') {
         goFullScreen(); 
-        const minVal = parseInt(fromTableInput.value || fromTableInput.placeholder);
-        const maxVal = parseInt(toTableInput.value   || toTableInput.placeholder);
+        const from = parseInt(fromTableInput.value || fromTableInput.placeholder);
+        const to   = parseInt(toTableInput.value   || toTableInput.placeholder);
         
         initialProblemSet = [];
         const problemMap = new Set();
-        const targetProblemCount = 100;
-        let attempts = 0;
-        const maxAttempts = 5000;
+        
+        const jMax = to > 10 ? 12 : 10; // Use 1-10 for "Up to 10s", 1-12 for "Up to 12s" and custom
 
         if (gameOperation === 'add') {
             gameTitleEl.textContent = "Addition Mastery";
-            while (initialProblemSet.length < targetProblemCount && attempts < maxAttempts) {
-                let sum = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
-                let num1 = Math.floor(Math.random() * sum); // num1 can be 0
-                let num2 = sum - num1;
-                
-                const key = Math.min(num1, num2) + "+" + Math.max(num1, num2);
-                if (!problemMap.has(key)) {
-                    problemMap.add(key);
-                    initialProblemSet.push([num1, num2]);
+            for (let i = from; i <= to; i++) {
+                for (let j = 1; j <= (preset10Btn.classList.contains('preset-btn-selected') ? 10 : 12); j++) {
+                    const key = Math.min(i, j) + "+" + Math.max(i, j);
+                    if (!problemMap.has(key)) {
+                        problemMap.add(key);
+                        initialProblemSet.push([i, j]);
+                    }
                 }
-                attempts++;
             }
         } else { // Subtraction
             gameTitleEl.textContent = "Subtraction Mastery";
-            while (initialProblemSet.length < targetProblemCount && attempts < maxAttempts) {
-                let num1 = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
-                let num2 = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
-                
-                if (num1 < num2) {
-                    [num1, num2] = [num2, num1]; // Swap them so num1 is always bigger
+             for (let i = from; i <= to; i++) {
+                for (let j = 1; j <= (preset10Btn.classList.contains('preset-btn-selected') ? 10 : 12); j++) {
+                    const num1 = Math.max(i, j);
+                    const num2 = Math.min(i, j);
+                    const key = `${num1}-${num2}`;
+                    if (!problemMap.has(key)) {
+                        problemMap.add(key);
+                        initialProblemSet.push([num1, num2]);
+                    }
                 }
-                
-                const key = `${num1}-${num2}`;
-                if (!problemMap.has(key)) {
-                    problemMap.add(key);
-                    initialProblemSet.push([num1, num2]);
-                }
-                attempts++;
             }
         }
         
         if (initialProblemSet.length === 0) {
-             initialProblemSet.push( (gameOperation === 'add') ? [Math.floor(minVal/2), minVal - Math.floor(minVal/2)] : [minVal, 0] );
+             initialProblemSet.push( (gameOperation === 'add') ? [from, 1] : [from, 1] );
         }
 
         setupModalEl.classList.add('hidden');
@@ -986,9 +970,9 @@
         gameOperation = 'add';
         opAddBtn.classList.add('mode-btn-selected');
         opSubBtn.classList.remove('mode-btn-selected');
-        fromLabel.textContent = "Min Sum";
-        toLabel.textContent = "Max Sum";
-        toTableInput.placeholder = "20";
+        fromLabel.textContent = "From";
+        toLabel.textContent = "To";
+        toTableInput.placeholder = "12";
         setupErrorEl.textContent = '';
     });
     
@@ -998,7 +982,7 @@
         opAddBtn.classList.remove('mode-btn-selected');
         fromLabel.textContent = "From";
         toLabel.textContent = "To";
-        toTableInput.placeholder = "20";
+        toTableInput.placeholder = "12";
         setupErrorEl.textContent = '';
     });
 
