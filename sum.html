@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Addition Mastery</title>
+  <title>Math Mastery</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
@@ -121,7 +121,14 @@
   </div>
 
   <div id="setup-modal" class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl p-6 text-center max-w-sm w-full z-20">
-    <div id="range-step" class="modal-enter">
+    <div id="operation-step" class="modal-enter">
+      <h2 class="text-2xl md:text-3xl fredoka text-blue-800">Choose Your Game</h2>
+      <div class="my-4 flex flex-col gap-2">
+        <button id="op-add-btn" class="py-2 px-4 rounded-lg border-2 border-gray-300">Addition</button>
+        <button id="op-sub-btn" class="py-2 px-4 rounded-lg border-2 border-gray-300">Subtraction</button>
+      </div>
+    </div>
+    <div id="range-step" class="hidden modal-enter">
       <h2 class="text-2xl md:text-3xl fredoka text-blue-800">Choose Your Numbers!</h2>
       <div class="grid grid-cols-2 gap-2 my-4">
         <button id="preset-1-20" class="preset-btn py-2 px-4 rounded-lg border-2 border-gray-300 bg-gray-100">1 to 20</button>
@@ -132,11 +139,11 @@
       <button id="custom-btn" class="preset-btn py-2 px-4 rounded-lg border-2 border-gray-300 bg-gray-100 w-full">Custom</button>
       <div id="custom-range-inputs" class="hidden items-center justify-center gap-4 mt-4">
         <div class="flex flex-col items-center">
-          <label for="from-table" class="text-gray-700">Min Sum</label>
+          <label id="from-label" for="from-table" class="text-gray-700">Min Sum</label>
           <input type="number" id="from-table" placeholder="1" class="w-20 text-center text-lg py-1 px-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500" inputmode="none" />
         </div>
         <div class="flex flex-col items-center">
-          <label for="to-table" class="text-gray-700">Max Sum</label>
+          <label id="to-label" for="to-table" class="text-gray-700">Max Sum</label>
           <input type="number" id="to-table" placeholder="20" class="w-20 text-center text-lg py-1 px-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500" inputmode="none" />
         </div>
       </div>
@@ -172,7 +179,7 @@
 
   <div id="game-container" class="w-full mx-auto flex flex-col hidden modal-enter">
     <div class="text-center flex-shrink-0 pt-2">
-      <h1 class="text-2xl md:text-3xl fredoka text-blue-800">Addition Mastery</h1>
+      <h1 id="game-title" class="text-2xl md:text-3xl fredoka text-blue-800">Addition Mastery</h1>
       <div class="flex items-center justify-center gap-4">
         <button id="pause-btn" class="bg-yellow-600 text-white py-1 px-4 rounded-full text-xs hover:bg-yellow-700 active:scale-95 transition-transform shadow-md">Pause</button>
         <p id="clock" class="text-xl fredoka text-blue-700">00:00</p>
@@ -245,11 +252,14 @@
   <script>
     // DOM
     const setupModalEl = document.getElementById('setup-modal');
+    const operationStepEl = document.getElementById('operation-step');
     const rangeStepEl = document.getElementById('range-step');
     const modeStepEl = document.getElementById('mode-step');
     const soundStepEl = document.getElementById('sound-step');
     const fromTableInput = document.getElementById('from-table');
     const toTableInput = document.getElementById('to-table');
+    const fromLabel = document.getElementById('from-label');
+    const toLabel = document.getElementById('to-label');
     const preset1_20Btn = document.getElementById('preset-1-20');
     const preset20_50Btn = document.getElementById('preset-20-50');
     const preset1_50Btn = document.getElementById('preset-1-50');
@@ -258,11 +268,14 @@
     const customRangeInputs = document.getElementById('custom-range-inputs');
     const setupErrorEl = document.getElementById('setup-error');
     const startGameBtn = document.getElementById('start-game-btn');
+    const opAddBtn = document.getElementById('op-add-btn');
+    const opSubBtn = document.getElementById('op-sub-btn');
     const modeChoiceBtn = document.getElementById('mode-choice-btn');
     const modeKeypadBtn = document.getElementById('mode-keypad-btn');
     const soundOnBtn = document.getElementById('sound-on-btn');
     const soundOffBtn = document.getElementById('sound-off-btn');
     const gameContainerEl = document.getElementById('game-container');
+    const gameTitleEl = document.getElementById('game-title');
     const pauseBtn = document.getElementById('pause-btn');
     const setupKeypadModal = document.getElementById('setup-keypad-modal');
 
@@ -294,8 +307,9 @@
     const wrongCountEl = document.getElementById('wrong-count');
 
     // State
-    let setupStep = 'range';
+    let setupStep = 'operation';
     let gameMode = null;
+    let gameOperation = null;
     let currentInput = '', isSoundOn = true;
     let currentProblem, correctAnswer, activeProblemKey = null;
     let allProblemsForRound = [], problemsToDo = [], problemsGottenWrongInRound = [];
@@ -450,6 +464,7 @@
                 btn.addEventListener('click', () => {
                     if (activeCustomInput) {
                         activeCustomInput.value = activeCustomInput.value.slice(0, -1);
+                        activeCustomInput.dispatchEvent(new Event('input'));
                     }
                 });
             } else if (key === 'Done') {
@@ -464,8 +479,9 @@
             } else {
                 btn.classList.add('bg-white', 'text-gray-800');
                 btn.addEventListener('click', () => {
-                    if (activeCustomInput && activeCustomInput.value.length < 3) { // Allow up to 3 digits
+                    if (activeCustomInput && activeCustomInput.value.length < 3) {
                         activeCustomInput.value += key;
+                        activeCustomInput.dispatchEvent(new Event('input'));
                     }
                 });
             }
@@ -553,8 +569,8 @@
 
       currentProblem = problemsToDo[Math.floor(Math.random() * problemsToDo.length)];
       const [num1, num2] = currentProblem;
-      correctAnswer = num1 + num2;
-      activeProblemKey = `${num1}+${num2}`;
+      correctAnswer = (gameOperation === 'add') ? num1 + num2 : num1 - num2;
+      activeProblemKey = (gameOperation === 'add') ? `${num1}+${num2}` : `${num1}-${num2}`;
       problemEl.textContent = activeProblemKey;
 
       const problemTag = document.getElementById(`tag-${activeProblemKey}`);
@@ -582,12 +598,22 @@
       while (choices.size < 4 && attempts < 50) {
         let wrongAnswer;
         const errorType = Math.random();
-        if (errorType < 0.33) {
-          wrongAnswer = (num1 + (Math.random() > 0.5 ? 1 : -1)) + num2;
-        } else if (errorType < 0.66) {
-          wrongAnswer = num1 + (num2 + (Math.random() > 0.5 ? 1 : -1));
-        } else {
-          wrongAnswer = correctAnswer + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
+        if (gameOperation === 'add') {
+            if (errorType < 0.33) {
+                wrongAnswer = (num1 + (Math.random() > 0.5 ? 1 : -1)) + num2;
+            } else if (errorType < 0.66) {
+                wrongAnswer = num1 + (num2 + (Math.random() > 0.5 ? 1 : -1));
+            } else {
+                wrongAnswer = correctAnswer + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
+            }
+        } else { // Subtraction
+             if (errorType < 0.33) {
+                wrongAnswer = (num1 + (Math.random() > 0.5 ? 1 : -1)) - num2;
+            } else if (errorType < 0.66) {
+                wrongAnswer = num1 - (num2 + (Math.random() > 0.5 ? 1 : -1));
+            } else {
+                wrongAnswer = correctAnswer + (Math.random() > 0.5 ? 1 : -1) * (Math.floor(Math.random() * 3) + 1);
+            }
         }
         if (wrongAnswer > 0 && wrongAnswer !== correctAnswer) {
           choices.add(wrongAnswer);
@@ -703,20 +729,25 @@
 
     function renderFullProgressList() {
       progressContainer.innerHTML = initialProblemSet.map(p => {
-        const key = `${p[0]}+${p[1]}`; return `<div id="tag-${key}" class="problem-tag bg-green-500">${key}</div>`;
+        const key = (gameOperation === 'add') ? `${p[0]}+${p[1]}` : `${p[0]}-${p[1]}`;
+        return `<div id="tag-${key}" class="problem-tag bg-green-500">${key}</div>`;
       }).join('');
     }
     function renderPracticeRoundProgressList() {
       progressContainer.innerHTML = allProblemsForRound.map(p => {
-        const key = `${p[0]}+${p[1]}`; return `<div id="tag-${key}" class="problem-tag bg-green-500">${key}</div>`;
+        const key = (gameOperation === 'add') ? `${p[0]}+${p[1]}` : `${p[0]}-${p[1]}`;
+        return `<div id="tag-${key}" class="problem-tag bg-green-500">${key}</div>`;
       }).join('');
     }
     
     function renderWrongList() {
-      const arr = Array.from(allTimeWrongProblems).map(k => k.split('+').map(Number));
+      const arr = Array.from(allTimeWrongProblems).map(k => k.split(gameOperation === 'add' ? '+' : '-').map(Number));
       wrongCountEl.textContent = arr.length;
       wrongListEl.innerHTML = arr.sort((a,b)=>(a[0]*100+a[1])-(b[0]*100+b[1]))
-        .map(p => `<div id="wrong-tag-${p[0]}+${p[1]}" class="problem-tag bg-orange-400">${p[0]}+${p[1]}</div>`).join('');
+        .map(p => {
+          const key = (gameOperation === 'add') ? `${p[0]}+${p[1]}` : `${p[0]}-${p[1]}`;
+          return `<div id="wrong-tag-${key}" class="problem-tag bg-orange-400">${key}</div>`;
+        }).join('');
     }
 
     function updateProgressCount() {
@@ -749,18 +780,21 @@
       clearPresetSelection();
       resetModeSelection();
       resetSoundSelection();
+      resetOperationSelection();
       gameMode = null;
+      gameOperation = null;
 
-      setupStep = 'range';
+      setupStep = 'operation';
       startGameBtn.textContent = 'Next';
       startGameBtn.disabled = false;
       isStarting = false;
-      rangeStepEl.classList.remove('hidden');
+      operationStepEl.classList.remove('hidden');
+      rangeStepEl.classList.add('hidden');
       modeStepEl.classList.add('hidden');
       soundStepEl.classList.add('hidden');
       setupErrorEl.textContent = '';
       setupModalEl.classList.remove('hidden');
-      reanimate(rangeStepEl);
+      reanimate(operationStepEl);
 
       gameContainerEl.classList.add('is-choice');
       updateCardHeight();
@@ -787,6 +821,10 @@
     function resetModeSelection() {
       modeChoiceBtn.classList.remove('mode-btn-selected');
       modeKeypadBtn.classList.remove('mode-btn-selected');
+    }
+    function resetOperationSelection() {
+      opAddBtn.classList.remove('mode-btn-selected');
+      opSubBtn.classList.remove('mode-btn-selected');
     }
     function resetSoundSelection() {
         soundOnBtn.classList.add('mode-btn-selected');
@@ -829,7 +867,17 @@
       isStarting = true;
       startGameBtn.disabled = true;
       setupErrorEl.textContent = '';
-      if (setupStep === 'range') {
+      
+      if (setupStep === 'operation') {
+        if (!gameOperation) {
+            setupErrorEl.textContent = "Please choose a game type.";
+            isStarting=false; startGameBtn.disabled=false; return;
+        }
+        operationStepEl.classList.add('hidden');
+        rangeStepEl.classList.remove('hidden');
+        reanimate(rangeStepEl);
+        setupStep = 'range';
+      } else if (setupStep === 'range') {
         let minSum, maxSum;
         let error = "";
         if (customBtn.classList.contains('preset-btn-selected')) {
@@ -846,8 +894,10 @@
             }
         }
         if (!error) {
-            if (minSum < 1 || maxSum < 1 || minSum > 200 || maxSum > 200) error = "Sums must be 1-200.";
-            else if (minSum > maxSum) error = "'Min Sum' must be smaller.";
+            const rangeError = (gameOperation === 'add') ? "Sums must be 1-200." : "Differences must be 1-100.";
+            const maxVal = (gameOperation === 'add') ? 200 : 100;
+            if (minSum < 1 || maxSum < 1 || minSum > maxVal || maxSum > maxVal) error = rangeError;
+            else if (minSum > maxSum) error = "'Min' must be smaller.";
         }
         if (error) {
           setupErrorEl.textContent = error;
@@ -869,36 +919,51 @@
         setupStep = 'sound';
       } else if (setupStep === 'sound') {
         goFullScreen(); 
-        const minSum = parseInt(fromTableInput.value || fromTableInput.placeholder);
-        const maxSum = parseInt(toTableInput.value   || toTableInput.placeholder);
+        const minVal = parseInt(fromTableInput.value || fromTableInput.placeholder);
+        const maxVal = parseInt(toTableInput.value   || toTableInput.placeholder);
         
         initialProblemSet = [];
         const problemMap = new Set();
-        const targetProblemCount = Math.min(100, (maxSum - minSum + 1) * 5); 
+        const targetProblemCount = 100;
         let attempts = 0;
 
-        while (initialProblemSet.length < targetProblemCount && attempts < 2000) {
-            let num1 = Math.floor(Math.random() * (maxSum - 1)) + 1;
-            let num2 = Math.floor(Math.random() * (maxSum - num1)) + 1;
-            let sum = num1 + num2;
-
-            if (sum >= minSum && sum <= maxSum) {
-                const key = Math.min(num1, num2) + "+" + Math.max(num1, num2);
-                if (!problemMap.has(key)) {
-                    problemMap.add(key);
-                    initialProblemSet.push([num1, num2]);
+        if (gameOperation === 'add') {
+            gameTitleEl.textContent = "Addition Mastery";
+            while (initialProblemSet.length < targetProblemCount && attempts < 2000) {
+                let num1 = Math.floor(Math.random() * (maxVal - 1)) + 1;
+                let num2 = Math.floor(Math.random() * (maxVal - num1)) + 1;
+                let sum = num1 + num2;
+                if (sum >= minVal && sum <= maxVal) {
+                    const key = Math.min(num1, num2) + "+" + Math.max(num1, num2);
+                    if (!problemMap.has(key)) {
+                        problemMap.add(key);
+                        initialProblemSet.push([num1, num2]);
+                    }
                 }
+                attempts++;
             }
-            attempts++;
+        } else { // Subtraction
+            gameTitleEl.textContent = "Subtraction Mastery";
+            while (initialProblemSet.length < targetProblemCount && attempts < 2000) {
+                let num1 = Math.floor(Math.random() * (maxVal * 2)) + minVal; // Start with a larger number
+                let num2 = Math.floor(Math.random() * num1) + 1;
+                let diff = num1 - num2;
+                if (diff >= minVal && diff <= maxVal) {
+                    const key = `${num1}-${num2}`;
+                    if (!problemMap.has(key)) {
+                        problemMap.add(key);
+                        initialProblemSet.push([num1, num2]);
+                    }
+                }
+                attempts++;
+            }
         }
         
         if (initialProblemSet.length === 0) {
-             if(minSum === 1 && maxSum === 1) initialProblemSet.push([1,0]); // Edge case
-             else if (minSum === 2 && maxSum === 2) initialProblemSet.push([1,1]); // Edge case
-             else { // Failsafe if no problems were generated
-                let num1 = Math.floor(minSum / 2);
-                let num2 = minSum - num1;
-                initialProblemSet.push([num1, num2]);
+             if(minVal === 1 && maxVal === 1) initialProblemSet.push( (gameOperation === 'add') ? [1,0] : [2,1] );
+             else if (minVal === 2 && maxVal === 2) initialProblemSet.push( (gameOperation === 'add') ? [1,1] : [3,1] );
+             else {
+                initialProblemSet.push( (gameOperation === 'add') ? [Math.floor(minVal/2), minVal - Math.floor(minVal/2)] : [minVal+1, 1] );
              }
         }
 
@@ -916,6 +981,26 @@
       }
       isStarting=false;
       startGameBtn.disabled=false;
+    });
+    
+    opAddBtn.addEventListener('click', () => {
+        gameOperation = 'add';
+        opAddBtn.classList.add('mode-btn-selected');
+        opSubBtn.classList.remove('mode-btn-selected');
+        fromLabel.textContent = "Min Sum";
+        toLabel.textContent = "Max Sum";
+        toTableInput.placeholder = "20";
+        setupErrorEl.textContent = '';
+    });
+    
+    opSubBtn.addEventListener('click', () => {
+        gameOperation = 'subtract';
+        opSubBtn.classList.add('mode-btn-selected');
+        opAddBtn.classList.remove('mode-btn-selected');
+        fromLabel.textContent = "Min Diff";
+        toLabel.textContent = "Max Diff";
+        toTableInput.placeholder = "10";
+        setupErrorEl.textContent = '';
     });
 
     modeChoiceBtn.addEventListener('click', () => {
