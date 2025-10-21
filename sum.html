@@ -21,8 +21,9 @@
     .keypad-slide-up { animation: slide-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     @keyframes slide-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-    .problem-tag { font-family: 'Fredoka One', cursive; padding: 1px 6px; border-radius: 6px; font-size: 0.9rem; height: 1.8rem;
-      width: 3.5rem; min-width: 3.5rem;
+    /* FIX: Removed fixed width, added min-width and padding for flexible buttons */
+    .problem-tag { font-family: 'Fredoka One', cursive; padding: 1px 8px; border-radius: 6px; font-size: 0.9rem; height: 1.8rem;
+      min-width: 3.5rem;
       box-shadow: 0 1px 2px rgba(0,0,0,0.1); color: white; transition: background-color 0.3s ease, font-size 0.3s ease;
       display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .is-current-question { animation: pulse-rainbow 2.5s infinite ease-in-out; }
@@ -895,8 +896,8 @@
         }
         if (!error) {
             const maxRange = (gameOperation === 'add') ? 200 : 100;
-            const rangeError = (gameOperation === 'add') ? "Sums must be 1-200." : "Differences must be 1-100.";
-            if (minVal < 1 || maxVal < 1 || minVal > maxRange || maxVal > maxRange) error = rangeError;
+            const rangeError = (gameOperation === 'add') ? "Answers must be 1-200." : "Numbers must be 1-100.";
+            if (minVal < 0 || maxVal < 0 || minVal > maxRange || maxVal > maxRange) error = rangeError;
             else if (minVal > maxVal) error = "'Min' must be smaller than 'Max'.";
         }
         if (error) {
@@ -926,12 +927,13 @@
         const problemMap = new Set();
         const targetProblemCount = 100;
         let attempts = 0;
+        const maxAttempts = 5000;
 
         if (gameOperation === 'add') {
             gameTitleEl.textContent = "Addition Mastery";
-            while (initialProblemSet.length < targetProblemCount && attempts < 2000) {
+            while (initialProblemSet.length < targetProblemCount && attempts < maxAttempts) {
                 let sum = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
-                let num1 = Math.floor(Math.random() * sum) + 1;
+                let num1 = Math.floor(Math.random() * sum); // num1 can be 0
                 let num2 = sum - num1;
                 
                 const key = Math.min(num1, num2) + "+" + Math.max(num1, num2);
@@ -943,25 +945,25 @@
             }
         } else { // Subtraction
             gameTitleEl.textContent = "Subtraction Mastery";
-            const maxMinuend = maxVal * 2; // Allow starting number to be up to 2x the max difference
-            while (initialProblemSet.length < targetProblemCount && attempts < 2000) {
-                let num1 = Math.floor(Math.random() * (maxMinuend - minVal)) + minVal + 1;
-                let num2 = Math.floor(Math.random() * (num1 - minVal)) + 1;
-                let diff = num1 - num2;
-
-                if (diff >= minVal && diff <= maxVal) {
-                    const key = `${num1}-${num2}`;
-                    if (!problemMap.has(key)) {
-                        problemMap.add(key);
-                        initialProblemSet.push([num1, num2]);
-                    }
+            while (initialProblemSet.length < targetProblemCount && attempts < maxAttempts) {
+                let num1 = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
+                let num2 = Math.floor(Math.random() * (maxVal - minVal + 1)) + minVal;
+                
+                if (num1 < num2) {
+                    [num1, num2] = [num2, num1]; // Swap them so num1 is always bigger
+                }
+                
+                const key = `${num1}-${num2}`;
+                if (!problemMap.has(key)) {
+                    problemMap.add(key);
+                    initialProblemSet.push([num1, num2]);
                 }
                 attempts++;
             }
         }
         
         if (initialProblemSet.length === 0) {
-             initialProblemSet.push( (gameOperation === 'add') ? [Math.floor(minVal/2), minVal - Math.floor(minVal/2)] : [minVal+1, 1] );
+             initialProblemSet.push( (gameOperation === 'add') ? [Math.floor(minVal/2), minVal - Math.floor(minVal/2)] : [minVal, 0] );
         }
 
         setupModalEl.classList.add('hidden');
@@ -994,8 +996,8 @@
         gameOperation = 'subtract';
         opSubBtn.classList.add('mode-btn-selected');
         opAddBtn.classList.remove('mode-btn-selected');
-        fromLabel.textContent = "Min Diff";
-        toLabel.textContent = "Max Diff";
+        fromLabel.textContent = "From";
+        toLabel.textContent = "To";
         toTableInput.placeholder = "20";
         setupErrorEl.textContent = '';
     });
