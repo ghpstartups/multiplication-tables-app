@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /> 
-    <title>Printable Math Worksheet Generator (Final Version)</title>
+    <title>Printable Math Worksheet Generator (Operands >= 1)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -88,7 +88,7 @@
         <h1 class="text-3xl md:text-4xl fredoka text-blue-800 text-center mb-6">Printable Math Worksheet</h1>
 
         <div id="range-section" class="config-section">
-            <h3 class="text-xl font-semibold text-gray-700 mb-3">1. Select Number Range (No Zeros in Operands):</h3>
+            <h3 class="text-xl font-semibold text-gray-700 mb-3">1. Select Number Range (Operands cannot be 0):</h3>
             <div id="range-buttons" class="grid grid-cols-3 gap-3">
                 <button type="button" data-range="1-10" class="option-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700 selected-btn">1 - 10</button>
                 <button type="button" data-range="10-20" class="option-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700">10 - 20</button>
@@ -131,7 +131,7 @@
     <script>
         const EQUATIONS_PER_PAGE = 60;
         const RESULT_MAX = 20; 
-        const MIN_OPERAND = 1; // Constraint: Minimum value for num1 and num2 (No Zeros)
+        const MIN_OPERAND = 1; // CONSTRAINT: Operands A and B must be >= 1
 
         // UI elements
         const generateBtn = document.getElementById('generate-btn');
@@ -151,34 +151,39 @@
             return { 
                 minRange: min, 
                 maxRange: max,
-                // The actual minimum operand value must be at least 1 AND at least the range's lower bound (e.g., 10 for 10-20)
-                effectiveMin: Math.max(MIN_OPERAND, min)
             };
         }
 
         // --- Core Logic for Problem Generation ---
-        function generateProblem(opType, minVal, maxVal, effectiveMin) {
+        function generateProblem(opType, minVal, maxVal) {
             let num1, num2, operator;
             let result;
             let attempts = 0;
+            
+            // The actual minimum value for random generation must be at least the range's min and also at least 1.
+            const minRand = Math.max(MIN_OPERAND, minVal);
 
             while (attempts < 100) { 
                 if (opType === '+') {
                     operator = '+';
-                    // num1 must be <= (RESULT_MAX - effectiveMin) to guarantee a valid num2 exists
-                    const maxA = Math.min(maxVal, RESULT_MAX - effectiveMin);
-                    num1 = getRandomInt(effectiveMin, maxA);
                     
-                    // num2 must be <= (RESULT_MAX - num1)
+                    // num1 max: must be within the maxVal range AND leave room for at least MIN_OPERAND (1) to reach RESULT_MAX
+                    const maxA = Math.min(maxVal, RESULT_MAX - MIN_OPERAND); 
+                    if (maxA < minRand) return "Error (Range too constrained for addition)";
+
+                    num1 = getRandomInt(minRand, maxA);
+                    
+                    // num2 max: must be within the maxVal range AND ensure result <= RESULT_MAX
                     const maxB = Math.min(maxVal, RESULT_MAX - num1);
-                    num2 = getRandomInt(effectiveMin, maxB);
+                    num2 = getRandomInt(minRand, maxB);
                     
                     result = num1 + num2;
                 } else if (opType === '-') {
                     operator = '-';
-                    // For subtraction, A and B must be in [effectiveMin, maxVal] and A >= B.
-                    let a = getRandomInt(effectiveMin, maxVal);
-                    let b = getRandomInt(effectiveMin, a); 
+                    
+                    // A and B must be in [minRand, maxVal] and A >= B.
+                    let a = getRandomInt(minRand, maxVal);
+                    let b = getRandomInt(minRand, a); 
                     num1 = a; 
                     num2 = b; 
                     result = num1 - num2;
@@ -186,8 +191,8 @@
                     return null;
                 }
                 
-                // Final check (mainly for subtraction to ensure A and B are within the defined maxVal)
-                if (num1 <= maxVal && num2 <= maxVal && num1 >= effectiveMin && num2 >= effectiveMin && result <= RESULT_MAX) {
+                // Final check (ensure both operands are within the range limits)
+                if (num1 <= maxVal && num2 <= maxVal && num1 >= minVal && num2 >= minVal && result <= RESULT_MAX && num1 >= MIN_OPERAND && num2 >= MIN_OPERAND) {
                     return `${num1} ${operator} ${num2}`;
                 }
                 attempts++;
@@ -196,7 +201,7 @@
         }
 
         function generateEquations(rangeString, operationCode, numPages) {
-            const { minRange, maxRange, effectiveMin } = getRangeLimits(rangeString);
+            const { minRange, maxRange } = getRangeLimits(rangeString);
             const totalEquations = numPages * EQUATIONS_PER_PAGE;
             const problems = [];
             const opTypes = [];
@@ -208,15 +213,15 @@
 
             for (let i = 0; i < totalEquations; i++) {
                 const op = opTypes[getRandomInt(0, opTypes.length - 1)];
-                const problem = generateProblem(op, minRange, maxRange, effectiveMin);
+                const problem = generateProblem(op, minRange, maxRange);
                 problems.push(problem);
             }
             return problems;
         }
 
-        // --- PDF Generation (Layout Fixed) ---
+        // --- PDF Generation (Cleaned Title) ---
         function createPDF(allEquations, numPages, rangeString) {
-            const { minRange, maxRange, effectiveMin } = getRangeLimits(rangeString);
+            const { minRange, maxRange } = getRangeLimits(rangeString);
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'pt', format: 'a4' });
             
@@ -226,7 +231,7 @@
             const columnCount = 6;
             const rowCount = 10; 
             const ANSWER_LINE_LENGTH = 35; 
-            const TEXT_BASELINE_OFFSET = 4; // Ensures the line is vertically centered with the text
+            const TEXT_BASELINE_OFFSET = 4;
 
             const contentWidth = pageWidth - 2 * margin;
             const equationWidth = contentWidth / columnCount; 
@@ -248,9 +253,9 @@
                     (pageNum + 1) * EQUATIONS_PER_PAGE
                 );
 
-                // Page Title
+                // Page Title - Cleaned header
                 doc.setFontSize(18);
-                doc.text(`Math Worksheet (Range: ${minRange}-${maxRange}, Max Result: ${RESULT_MAX})`, pageWidth / 2, margin + 10, { align: 'center' });
+                doc.text(`Math Worksheet: Range ${minRange}-${maxRange}`, pageWidth / 2, margin + 10, { align: 'center' });
                 doc.line(margin, margin + 15, pageWidth - margin, margin + 15);
 
                 doc.setFontSize(12);
@@ -280,18 +285,21 @@
                 doc.text(`Page ${pageNum + 1} of ${numPages}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
             }
 
-            doc.save(`math_worksheet_${minRange}-${maxRange}_fixed.pdf`);
+            doc.save(`math_worksheet_${minRange}-${maxRange}.pdf`);
         }
         
-        // --- Max Combinations Logic (FIXED and Verified) ---
+        // --- Max Combinations Logic (Fixed for $A \ge 1, B \ge 1$) ---
         function calculateMaxCombinations(rangeString, operationCode) {
             let totalCombinations = 0;
-            const { minRange, maxRange, effectiveMin } = getRangeLimits(rangeString);
+            const { minRange, maxRange } = getRangeLimits(rangeString);
             
+            // The actual minimum value for calculation is max(range_min, 1)
+            const minCalc = Math.max(MIN_OPERAND, minRange);
+
             if (operationCode.includes('+')) {
-                // Addition: A + B <= 20, A, B in [effectiveMin, maxRange]
-                for (let a = effectiveMin; a <= maxRange; a++) {
-                    for (let b = effectiveMin; b <= maxRange; b++) {
+                // Addition: A + B <= 20, A, B in [minCalc, maxRange]
+                for (let a = minCalc; a <= maxRange; a++) {
+                    for (let b = minCalc; b <= maxRange; b++) {
                         if (a + b <= RESULT_MAX) {
                             totalCombinations++;
                         }
@@ -300,9 +308,9 @@
             }
 
             if (operationCode.includes('-')) {
-                // Subtraction: A >= B, A, B in [effectiveMin, maxRange]
-                for (let a = effectiveMin; a <= maxRange; a++) {
-                    for (let b = effectiveMin; b <= maxRange; b++) {
+                // Subtraction: A >= B, A, B in [minCalc, maxRange]
+                for (let a = minCalc; a <= maxRange; a++) {
+                    for (let b = minCalc; b <= maxRange; b++) {
                         if (a >= b) {
                             totalCombinations++; 
                         }
@@ -361,14 +369,14 @@
             const { rangeString, operationCode, numPages } = getConfig();
             
             const allEquations = generateEquations(rangeString, operationCode, numPages);
-            const { minRange, maxRange, effectiveMin } = getRangeLimits(rangeString);
+            const { minRange, maxRange } = getRangeLimits(rangeString);
             
             // 3. Update Preview
             mathPreview.innerHTML = '';
             
             const header = document.createElement('div');
             header.className = 'text-center text-lg font-bold fredoka mb-4';
-            header.textContent = `Worksheet: ${minRange}-${maxRange} (Max Result: ${RESULT_MAX}, Min Operand: ${effectiveMin})`;
+            header.textContent = `Worksheet: Range ${minRange}-${maxRange}`; // Cleaned header
             mathPreview.appendChild(header);
 
             const equationGrid = document.createElement('div');
