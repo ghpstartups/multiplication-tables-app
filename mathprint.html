@@ -1,366 +1,350 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <meta http-equiv="Content-Style-Type" content="text/css">
-  <title></title>
-  <meta name="Generator" content="Cocoa HTML Writer">
-  <meta name="CocoaVersion" content="2575.7">
-  <style type="text/css">
-    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
-    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First Grade Math Worksheet Generator</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .config-section { 
+            margin-bottom: 25px; 
+            padding: 15px; 
+            border: 1px solid #bdc3c7; 
+            border-radius: 8px; 
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .config-section label {
+            margin-right: 20px;
+            cursor: pointer;
+            font-size: 1.05em;
+        }
+        button {
+            padding: 10px 15px;
+            margin-right: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        #max-pages-btn {
+            background-color: #f39c12;
+            color: white;
+        }
+        #max-pages-btn:hover {
+            background-color: #e67e22;
+        }
+        #generate-btn {
+            background-color: #2ecc71;
+            color: white;
+            font-size: 1.1em;
+            padding: 12px 20px;
+        }
+        #generate-btn:hover {
+            background-color: #27ae60;
+        }
+        #download-pdf-btn {
+            background-color: #3498db;
+            color: white;
+            font-size: 1.1em;
+            padding: 12px 20px;
+            display: none; /* Hide until equations are generated */
+        }
+        #download-pdf-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        /* Preview Styling - Mimics A4 Paper Layout */
+        #preview-area {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #ccc;
+        }
+        .page-preview {
+            border: 1px solid #333;
+            width: 595px; /* A4 width at 72dpi */
+            height: 842px; /* A4 height at 72dpi */
+            margin: 20px auto;
+            padding: 30px;
+            background-color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            overflow: hidden; /* Ensure content stays within the page */
+        }
+        .equation-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr); 
+            gap: 20px 5px; 
+            font-size: 16pt;
+            width: 100%;
+        }
+        .equation {
+            text-align: right;
+            padding: 2px 5px;
+            line-height: 1.2;
+        }
+    </style>
 </head>
 <body>
-<p class="p1">&lt;!DOCTYPE html&gt;</p>
-<p class="p1">&lt;html lang="en"&gt;</p>
-<p class="p1">&lt;head&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;First Grade Math Worksheet Generator&lt;/title&gt;</p>
-<p class="p2"><span class="Apple-converted-space">    </span></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"&gt;&lt;/script&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>body {<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-family: Arial, sans-serif;<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 20px;<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>max-width: 900px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin: 0 auto;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-color: #f4f4f9;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>h1 {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: #2c3e50;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-bottom: 2px solid #3498db;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding-bottom: 10px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.config-section {<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-bottom: 25px;<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 15px;<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>border: 1px solid #bdc3c7;<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 8px;<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-color: #ffffff;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: 0 2px 4px rgba(0,0,0,0.05);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.config-section label {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-right: 20px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>cursor: pointer;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 1.05em;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>button {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 10px 15px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-right: 10px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border: none;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-radius: 5px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>cursor: pointer;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-weight: bold;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>transition: background-color 0.3s;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>#max-pages-btn {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-color: #f39c12;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: white;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>#max-pages-btn:hover {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-color: #e67e22;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>#generate-btn {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-color: #2ecc71;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: white;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 1.1em;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 12px 20px;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>#generate-btn:hover {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-color: #27ae60;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>#download-pdf-btn {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-color: #3498db;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>color: white;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 1.1em;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 12px 20px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: none; /* Hide until equations are generated */</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>#download-pdf-btn:hover {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-color: #2980b9;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>/* Preview Styling - Mimics A4 Paper Layout */</p>
-<p class="p1"><span class="Apple-converted-space">        </span>#preview-area {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin-top: 30px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding-top: 20px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border-top: 2px solid #ccc;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.page-preview {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>border: 1px solid #333;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>width: 595px; /* A4 width at 72dpi */</p>
-<p class="p1"><span class="Apple-converted-space">            </span>height: 842px; /* A4 height at 72dpi */</p>
-<p class="p1"><span class="Apple-converted-space">            </span>margin: 20px auto;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 30px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>background-color: white;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>box-shadow: 0 4px 10px rgba(0,0,0,0.1);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>overflow: hidden; /* Ensure content stays within the page */</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.equation-grid {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>display: grid;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>grid-template-columns: repeat(6, 1fr);<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>gap: 20px 5px;<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>font-size: 16pt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>width: 100%;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">        </span>.equation {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>text-align: right;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>padding: 2px 5px;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>line-height: 1.2;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
-<p class="p1">&lt;/head&gt;</p>
-<p class="p1">&lt;body&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;h1&gt;🧠 First Grade Math Worksheet Generator&lt;/h1&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="range-section" class="config-section"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h3&gt;1. Select Number Range (e.g., $9 - 4$ is allowed, $4 - 9$ is NOT):&lt;/h3&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;&lt;input type="radio" name="range" value="0-10" checked&gt; 0-10&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;&lt;input type="radio" name="range" value="10-20"&gt; 10-20&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;&lt;input type="radio" name="range" value="0-20"&gt; 0-20&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;&lt;input type="radio" name="range" value="0-100"&gt; 0-100&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="operation-section" class="config-section"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h3&gt;2. Select Operations:&lt;/h3&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;&lt;input type="checkbox" id="add-op" checked&gt; Addition (+)&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;&lt;input type="checkbox" id="sub-op"&gt; Subtraction (-)&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;label&gt;&lt;input type="checkbox" id="both-op"&gt; Both (+ and -)&lt;/label&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="page-section" class="config-section"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h3&gt;3. Number of Pages (60 Equations per page):&lt;/h3&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;input type="number" id="page-count" value="1" min="1" style="width: 60px; padding: 5px;"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;button id="max-pages-btn"&gt;Calculate Max Combinations&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;p&gt;&lt;small&gt;Max combinations: &lt;span id="max-combinations"&gt;121 equations / 3 pages (for 0-10)&lt;/span&gt;&lt;/small&gt;&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;button id="generate-btn"&gt;Generate &amp; Preview Pages&lt;/button&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;button id="download-pdf-btn"&gt;Download PDF&lt;/button&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="preview-area"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;h3&gt;4. Preview (First Page Only)&lt;/h3&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;div id="math-preview" class="page-preview"&gt;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>&lt;p style="text-align: center; color: #555;"&gt;Click "Generate &amp; Preview Pages" to see the worksheet.&lt;/p&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;script&gt;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const EQUATIONS_PER_PAGE = 60;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const generateBtn = document.getElementById('generate-btn');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const downloadPdfBtn = document.getElementById('download-pdf-btn');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const mathPreview = document.getElementById('math-preview');</p>
-<p class="p1"><span class="Apple-converted-space">        </span>const maxPagesBtn = document.getElementById('max-pages-btn');</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// Helper to get random number in a range [min, max]</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function getRandomInt(min, max) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>return Math.floor(Math.random() * (max - min + 1)) + min;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// Generates a single math problem based on the rules</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function generateProblem(opType, minVal, maxVal) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>let num1, num2, operator;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (opType === '+') {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>operator = '+';</p>
-<p class="p1"><span class="Apple-converted-space">                </span>// 5+6 and 6+5 are distinct and possible</p>
-<p class="p1"><span class="Apple-converted-space">                </span>num1 = getRandomInt(minVal, maxVal);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>num2 = getRandomInt(minVal, maxVal);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>} else if (opType === '-') {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>operator = '-';</p>
-<p class="p1"><span class="Apple-converted-space">                </span>// Ensure result is non-negative (larger number first)</p>
-<p class="p1"><span class="Apple-converted-space">                </span>let a = getRandomInt(minVal, maxVal);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>let b = getRandomInt(minVal, maxVal);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>num1 = Math.max(a, b);<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>num2 = Math.min(a, b);<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>} else {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>return null;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// Format: num1 operator num2 =<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>return `${num1} ${operator} ${num2} =`;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// Main function to generate all required equations</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function generateEquations(minRange, maxRange, operations, numPages) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const totalEquations = numPages * EQUATIONS_PER_PAGE;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const problems = [];</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const opTypes = [];</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (operations.add) opTypes.push('+');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (operations.sub) opTypes.push('-');</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>if (opTypes.length === 0) return [];</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>for (let i = 0; i &lt; totalEquations; i++) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>// Randomly select an operation</p>
-<p class="p1"><span class="Apple-converted-space">                </span>const op = opTypes[getRandomInt(0, opTypes.length - 1)];</p>
-<p class="p1"><span class="Apple-converted-space">                </span>const problem = generateProblem(op, minRange, maxRange);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>problems.push(problem);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">            </span>return problems;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>function createPDF(allEquations, numPages, minRange, maxRange) {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const { jsPDF } = window.jspdf;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const doc = new jsPDF({ unit: 'pt', format: 'a4' });</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>const margin = 36; // 0.5 inch</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const pageWidth = doc.internal.pageSize.getWidth();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const pageHeight = doc.internal.pageSize.getHeight();</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const columnCount = 6;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const equationHeight = 22; // Vertical space</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const equationWidth = (pageWidth - 2 * margin) / columnCount;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>doc.setFont('helvetica', 'normal');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>doc.setTextColor(0, 0, 0); // Black</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>for (let pageNum = 0; pageNum &lt; numPages; pageNum++) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>if (pageNum &gt; 0) {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>doc.addPage();</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">                </span>const pageEquations = allEquations.slice(</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>pageNum * EQUATIONS_PER_PAGE,<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                    </span>(pageNum + 1) * EQUATIONS_PER_PAGE</p>
-<p class="p1"><span class="Apple-converted-space">                </span>);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">                </span>// Page Title</p>
-<p class="p1"><span class="Apple-converted-space">                </span>doc.setFontSize(18);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>doc.text(`Math Worksheet (Range: ${minRange}-${maxRange})`, pageWidth / 2, margin / 2 + 10, { align: 'center' });</p>
-<p class="p1"><span class="Apple-converted-space">                </span>doc.line(margin, margin / 2 + 15, pageWidth - margin, margin / 2 + 15);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">                </span>doc.setFontSize(14); // Set font size for equations</p>
-<p class="p2"><span class="Apple-converted-space">                </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>pageEquations.forEach((eq, index) =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>const col = index % columnCount;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>const row = Math.floor(index / columnCount);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">                    </span>// X-coordinate: Right-align text within its column</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>const x = margin + (col * equationWidth) + equationWidth;<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                    </span>// Y-coordinate: Start point of the text line</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>const y = margin + 25 + (row * equationHeight); // Start lower than the title</p>
-<p class="p2"><span class="Apple-converted-space">                    </span></p>
-<p class="p1"><span class="Apple-converted-space">                    </span>doc.text(eq, x, y, { align: 'right' });</p>
-<p class="p2"><span class="Apple-converted-space">                    </span></p>
-<p class="p1"><span class="Apple-converted-space">                    </span>// Draw a line for the answer</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>const lineY = y + 2;<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                    </span>const lineLength = 40; // Length of the answer line</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>const lineEndX = x;</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>const lineStartX = x - lineLength;<span class="Apple-converted-space"> </span></p>
-<p class="p2"><span class="Apple-converted-space">                    </span></p>
-<p class="p1"><span class="Apple-converted-space">                    </span>doc.line(lineStartX, lineY, lineEndX, lineY);<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>});</p>
-<p class="p2"><span class="Apple-converted-space">                </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>// Page Number</p>
-<p class="p1"><span class="Apple-converted-space">                </span>doc.setFontSize(10);</p>
-<p class="p1"><span class="Apple-converted-space">                </span>doc.text(`Page ${pageNum + 1} of ${numPages}`, pageWidth / 2, pageHeight - 15, { align: 'center' });</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>doc.save(`math_worksheet_${minRange}-${maxRange}.pdf`);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// --- Main Controller Function ---</p>
-<p class="p1"><span class="Apple-converted-space">        </span>function generateAndPreview() {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 1. Get User Input</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const selectedRange = document.querySelector('input[name="range"]:checked').value;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const [minRange, maxRange] = selectedRange.split('-').map(Number);</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>const operations = {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>add: document.getElementById('add-op').checked,</p>
-<p class="p1"><span class="Apple-converted-space">                </span>sub: document.getElementById('sub-op').checked</p>
-<p class="p1"><span class="Apple-converted-space">            </span>};</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>const numPages = parseInt(document.getElementById('page-count').value) || 1;</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 2. Generate Equations</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const allEquations = generateEquations(minRange, maxRange, operations, numPages);</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 3. Update Preview (Show only the first page's equations)</p>
-<p class="p1"><span class="Apple-converted-space">            </span>mathPreview.innerHTML = '';</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const equationGrid = document.createElement('div');</p>
-<p class="p1"><span class="Apple-converted-space">            </span>equationGrid.className = 'equation-grid';</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>allEquations.slice(0, EQUATIONS_PER_PAGE).forEach(eq =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>const div = document.createElement('div');</p>
-<p class="p1"><span class="Apple-converted-space">                </span>div.className = 'equation';</p>
-<p class="p1"><span class="Apple-converted-space">                </span>div.textContent = eq;</p>
-<p class="p1"><span class="Apple-converted-space">                </span>equationGrid.appendChild(div);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>mathPreview.appendChild(equationGrid);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>downloadPdfBtn.style.display = 'inline-block';</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// 4. Set up Download Button with generated data</p>
-<p class="p1"><span class="Apple-converted-space">            </span>downloadPdfBtn.onclick = () =&gt; createPDF(allEquations, numPages, minRange, maxRange);</p>
-<p class="p1"><span class="Apple-converted-space">        </span>}</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// --- Event Listeners ---</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// Generate button click</p>
-<p class="p1"><span class="Apple-converted-space">        </span>generateBtn.addEventListener('click', generateAndPreview);</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// Operation Checkbox Logic (Both automatically selects Add/Sub)</p>
-<p class="p1"><span class="Apple-converted-space">        </span>document.getElementById('both-op').addEventListener('change', (e) =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const isChecked = e.target.checked;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('add-op').checked = isChecked;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('sub-op').checked = isChecked;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('add-op').disabled = isChecked;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('sub-op').disabled = isChecked;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// Calculate Max Combinations Logic (Approximate Maximum)</p>
-<p class="p1"><span class="Apple-converted-space">        </span>maxPagesBtn.addEventListener('click', () =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const selectedRange = document.querySelector('input[name="range"]:checked').value;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const [min, max] = selectedRange.split('-').map(Number);</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>let totalCombinations = 0;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const count = max - min + 1;</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// Addition: A+B, B+A are distinct. Total = count * count</p>
-<p class="p1"><span class="Apple-converted-space">            </span>totalCombinations += count * count;<span class="Apple-converted-space"> </span></p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>// Subtraction: A-B where A &gt;= B.</p>
-<p class="p1"><span class="Apple-converted-space">            </span>// Example 0-10 (count=11): 11 + 10 + 9 + ... + 1 (55 combinations + 1 for 0-0=0)</p>
-<p class="p1"><span class="Apple-converted-space">            </span>for (let a = min; a &lt;= max; a++) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>for (let b = min; b &lt;= max; b++) {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>if (a &gt;= b) {</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>totalCombinations++;<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p2"><span class="Apple-converted-space">            </span></p>
-<p class="p1"><span class="Apple-converted-space">            </span>const maxPages = Math.ceil(totalCombinations / EQUATIONS_PER_PAGE);</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('max-combinations').textContent =<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>`${totalCombinations.toLocaleString()} equations / ${maxPages} pages`;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>document.getElementById('page-count').value = maxPages;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>});</p>
-<p class="p2"><span class="Apple-converted-space">        </span></p>
-<p class="p1"><span class="Apple-converted-space">        </span>// Initial max combinations calculation for 0-10 on load</p>
-<p class="p1"><span class="Apple-converted-space">        </span>document.addEventListener('DOMContentLoaded', () =&gt; {</p>
-<p class="p1"><span class="Apple-converted-space">            </span>// Default range is 0-10.</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const min = 0;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const max = 10;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const count = max - min + 1;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>let totalCombinations = count * count;</p>
-<p class="p1"><span class="Apple-converted-space">            </span>for (let a = min; a &lt;= max; a++) {</p>
-<p class="p1"><span class="Apple-converted-space">                </span>for (let b = min; b &lt;= max; b++) {</p>
-<p class="p1"><span class="Apple-converted-space">                    </span>if (a &gt;= b) {</p>
-<p class="p1"><span class="Apple-converted-space">                        </span>totalCombinations++;<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
-<p class="p1"><span class="Apple-converted-space">                </span>}</p>
-<p class="p1"><span class="Apple-converted-space">            </span>}</p>
-<p class="p1"><span class="Apple-converted-space">            </span>const maxPages = Math.ceil(totalCombinations / EQUATIONS_PER_PAGE);</p>
-<p class="p1"><span class="Apple-converted-space">             </span>document.getElementById('max-combinations').textContent =<span class="Apple-converted-space"> </span></p>
-<p class="p1"><span class="Apple-converted-space">                </span>`${totalCombinations} equations / ${maxPages} pages (for 0-10)`;</p>
-<p class="p1"><span class="Apple-converted-space">        </span>});</p>
-<p class="p2"><br></p>
-<p class="p1"><span class="Apple-converted-space">    </span>&lt;/script&gt;</p>
-<p class="p1">&lt;/body&gt;</p>
-<p class="p1">&lt;/html&gt;</p>
+
+    <h1>🧠 First Grade Math Worksheet Generator</h1>
+
+    <div id="range-section" class="config-section">
+        <h3>1. Select Number Range (e.g., $9 - 4$ is allowed, $4 - 9$ is NOT):</h3>
+        <label><input type="radio" name="range" value="0-10" checked> 0-10</label>
+        <label><input type="radio" name="range" value="10-20"> 10-20</label>
+        <label><input type="radio" name="range" value="0-20"> 0-20</label>
+        <label><input type="radio" name="range" value="0-100"> 0-100</label>
+    </div>
+
+    <div id="operation-section" class="config-section">
+        <h3>2. Select Operations:</h3>
+        <label><input type="checkbox" id="add-op" checked> Addition (+)</label>
+        <label><input type="checkbox" id="sub-op"> Subtraction (-)</label>
+        <label><input type="checkbox" id="both-op"> Both (+ and -)</label>
+    </div>
+
+    <div id="page-section" class="config-section">
+        <h3>3. Number of Pages (60 Equations per page):</h3>
+        <input type="number" id="page-count" value="1" min="1" style="width: 60px; padding: 5px;">
+        <button id="max-pages-btn">Calculate Max Combinations</button>
+        <p><small>Max combinations: <span id="max-combinations">121 equations / 3 pages (for 0-10)</span></small></p>
+    </div>
+
+    <button id="generate-btn">Generate & Preview Pages</button>
+    <button id="download-pdf-btn">Download PDF</button>
+
+    <div id="preview-area">
+        <h3>4. Preview (First Page Only)</h3>
+        <div id="math-preview" class="page-preview">
+            <p style="text-align: center; color: #555;">Click "Generate & Preview Pages" to see the worksheet.</p>
+        </div>
+    </div>
+
+    <script>
+        const EQUATIONS_PER_PAGE = 60;
+        const generateBtn = document.getElementById('generate-btn');
+        const downloadPdfBtn = document.getElementById('download-pdf-btn');
+        const mathPreview = document.getElementById('math-preview');
+        const maxPagesBtn = document.getElementById('max-pages-btn');
+
+        // Helper to get random number in a range [min, max]
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // Generates a single math problem based on the rules
+        function generateProblem(opType, minVal, maxVal) {
+            let num1, num2, operator;
+
+            if (opType === '+') {
+                operator = '+';
+                // 5+6 and 6+5 are distinct and possible
+                num1 = getRandomInt(minVal, maxVal);
+                num2 = getRandomInt(minVal, maxVal);
+            } else if (opType === '-') {
+                operator = '-';
+                // Ensure result is non-negative (larger number first)
+                let a = getRandomInt(minVal, maxVal);
+                let b = getRandomInt(minVal, maxVal);
+                num1 = Math.max(a, b); 
+                num2 = Math.min(a, b); 
+            } else {
+                return null;
+            }
+            
+            // Format: num1 operator num2 = 
+            return `${num1} ${operator} ${num2} =`;
+        }
+
+        // Main function to generate all required equations
+        function generateEquations(minRange, maxRange, operations, numPages) {
+            const totalEquations = numPages * EQUATIONS_PER_PAGE;
+            const problems = [];
+            const opTypes = [];
+            
+            if (operations.add) opTypes.push('+');
+            if (operations.sub) opTypes.push('-');
+            
+            if (opTypes.length === 0) return [];
+
+            for (let i = 0; i < totalEquations; i++) {
+                // Randomly select an operation
+                const op = opTypes[getRandomInt(0, opTypes.length - 1)];
+                const problem = generateProblem(op, minRange, maxRange);
+                problems.push(problem);
+            }
+            return problems;
+        }
+
+        function createPDF(allEquations, numPages, minRange, maxRange) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+            
+            const margin = 36; // 0.5 inch
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const columnCount = 6;
+            const equationHeight = 22; // Vertical space
+            const equationWidth = (pageWidth - 2 * margin) / columnCount;
+
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(0, 0, 0); // Black
+
+            for (let pageNum = 0; pageNum < numPages; pageNum++) {
+                if (pageNum > 0) {
+                    doc.addPage();
+                }
+
+                const pageEquations = allEquations.slice(
+                    pageNum * EQUATIONS_PER_PAGE, 
+                    (pageNum + 1) * EQUATIONS_PER_PAGE
+                );
+
+                // Page Title
+                doc.setFontSize(18);
+                doc.text(`Math Worksheet (Range: ${minRange}-${maxRange})`, pageWidth / 2, margin / 2 + 10, { align: 'center' });
+                doc.line(margin, margin / 2 + 15, pageWidth - margin, margin / 2 + 15);
+
+                doc.setFontSize(14); // Set font size for equations
+                
+                pageEquations.forEach((eq, index) => {
+                    const col = index % columnCount;
+                    const row = Math.floor(index / columnCount);
+
+                    // X-coordinate: Right-align text within its column
+                    const x = margin + (col * equationWidth) + equationWidth; 
+                    // Y-coordinate: Start point of the text line
+                    const y = margin + 25 + (row * equationHeight); // Start lower than the title
+                    
+                    doc.text(eq, x, y, { align: 'right' });
+                    
+                    // Draw a line for the answer
+                    const lineY = y + 2; 
+                    const lineLength = 40; // Length of the answer line
+                    const lineEndX = x;
+                    const lineStartX = x - lineLength; 
+                    
+                    doc.line(lineStartX, lineY, lineEndX, lineY); 
+                });
+                
+                // Page Number
+                doc.setFontSize(10);
+                doc.text(`Page ${pageNum + 1} of ${numPages}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
+            }
+
+            doc.save(`math_worksheet_${minRange}-${maxRange}.pdf`);
+        }
+        
+        // --- Main Controller Function ---
+        function generateAndPreview() {
+            // 1. Get User Input
+            const selectedRange = document.querySelector('input[name="range"]:checked').value;
+            const [minRange, maxRange] = selectedRange.split('-').map(Number);
+            
+            const operations = {
+                add: document.getElementById('add-op').checked,
+                sub: document.getElementById('sub-op').checked
+            };
+            
+            const numPages = parseInt(document.getElementById('page-count').value) || 1;
+            
+            // 2. Generate Equations
+            const allEquations = generateEquations(minRange, maxRange, operations, numPages);
+            
+            // 3. Update Preview (Show only the first page's equations)
+            mathPreview.innerHTML = '';
+            const equationGrid = document.createElement('div');
+            equationGrid.className = 'equation-grid';
+
+            allEquations.slice(0, EQUATIONS_PER_PAGE).forEach(eq => {
+                const div = document.createElement('div');
+                div.className = 'equation';
+                div.textContent = eq;
+                equationGrid.appendChild(div);
+            });
+
+            mathPreview.appendChild(equationGrid);
+            downloadPdfBtn.style.display = 'inline-block';
+
+            // 4. Set up Download Button with generated data
+            downloadPdfBtn.onclick = () => createPDF(allEquations, numPages, minRange, maxRange);
+        }
+
+        // --- Event Listeners ---
+
+        // Generate button click
+        generateBtn.addEventListener('click', generateAndPreview);
+
+        // Operation Checkbox Logic (Both automatically selects Add/Sub)
+        document.getElementById('both-op').addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            document.getElementById('add-op').checked = isChecked;
+            document.getElementById('sub-op').checked = isChecked;
+            document.getElementById('add-op').disabled = isChecked;
+            document.getElementById('sub-op').disabled = isChecked;
+        });
+
+        // Calculate Max Combinations Logic (Approximate Maximum)
+        maxPagesBtn.addEventListener('click', () => {
+            const selectedRange = document.querySelector('input[name="range"]:checked').value;
+            const [min, max] = selectedRange.split('-').map(Number);
+            
+            let totalCombinations = 0;
+            const count = max - min + 1;
+
+            // Addition: A+B, B+A are distinct. Total = count * count
+            totalCombinations += count * count; 
+            
+            // Subtraction: A-B where A >= B.
+            // Example 0-10 (count=11): 11 + 10 + 9 + ... + 1 (55 combinations + 1 for 0-0=0)
+            for (let a = min; a <= max; a++) {
+                for (let b = min; b <= max; b++) {
+                    if (a >= b) {
+                        totalCombinations++; 
+                    }
+                }
+            }
+            
+            const maxPages = Math.ceil(totalCombinations / EQUATIONS_PER_PAGE);
+            document.getElementById('max-combinations').textContent = 
+                `${totalCombinations.toLocaleString()} equations / ${maxPages} pages`;
+            document.getElementById('page-count').value = maxPages;
+        });
+        
+        // Initial max combinations calculation for 0-10 on load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Default range is 0-10.
+            const min = 0;
+            const max = 10;
+            const count = max - min + 1;
+            let totalCombinations = count * count;
+            for (let a = min; a <= max; a++) {
+                for (let b = min; b <= max; b++) {
+                    if (a >= b) {
+                        totalCombinations++; 
+                    }
+                }
+            }
+            const maxPages = Math.ceil(totalCombinations / EQUATIONS_PER_PAGE);
+             document.getElementById('max-combinations').textContent = 
+                `${totalCombinations} equations / ${maxPages} pages (for 0-10)`;
+        });
+
+    </script>
 </body>
 </html>
