@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /> 
-    <title>Printable Math Worksheet Generator (Result Max 20)</title>
+    <title>Printable Math Worksheet Generator (Result Max 20, No Zeros)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -88,11 +88,11 @@
         <h1 class="text-3xl md:text-4xl fredoka text-blue-800 text-center mb-6">Printable Math Worksheet</h1>
 
         <div id="range-section" class="config-section">
-            <h3 class="text-xl font-semibold text-gray-700 mb-3">1. Select Number Range:</h3>
+            <h3 class="text-xl font-semibold text-gray-700 mb-3">1. Select Number Range (Min 1):</h3>
             <div id="range-buttons" class="grid grid-cols-3 gap-3">
-                <button type="button" data-range="0-10" class="option-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700 selected-btn">0 - 10</button>
+                <button type="button" data-range="1-10" class="option-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700 selected-btn">1 - 10</button>
                 <button type="button" data-range="10-20" class="option-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700">10 - 20</button>
-                <button type="button" data-range="0-20" class="option-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700">0 - 20</button>
+                <button type="button" data-range="1-20" class="option-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700">1 - 20</button>
             </div>
         </div>
 
@@ -130,7 +130,9 @@
 
     <script>
         const EQUATIONS_PER_PAGE = 60;
-        const RESULT_MAX = 20; // NEW CONSTRAINT: Result cannot exceed 20
+        const RESULT_MAX = 20; 
+        const MIN_VALUE = 1; // NEW CONSTRAINT: Minimum value for num1 and num2
+
         const generateBtn = document.getElementById('generate-btn');
         const downloadPdfBtn = document.getElementById('download-pdf-btn');
         const mathPreview = document.getElementById('math-preview');
@@ -140,28 +142,31 @@
         const maxCombinationsEl = document.getElementById('max-combinations');
 
         function getRandomInt(min, max) {
+            // Ensure min is at least 1 for the constraints
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
-        // --- Core Logic (Updated with Result Constraint) ---
+        // --- Core Logic (Updated with Min 1 Constraint) ---
 
         function generateProblem(opType, minVal, maxVal) {
             let num1, num2, operator;
             let result;
             let attempts = 0;
 
-            while (attempts < 100) { // Safety break
+            const effectiveMin = Math.max(minVal, MIN_VALUE); // Enforce minimum 1
+
+            while (attempts < 100) { 
                 if (opType === '+') {
                     operator = '+';
-                    // Limit the first number to ensure num1 + num2 <= RESULT_MAX
-                    num1 = getRandomInt(minVal, Math.min(maxVal, RESULT_MAX));
-                    num2 = getRandomInt(minVal, Math.min(maxVal, RESULT_MAX - num1));
+                    // Limit num1 and num2 such that their sum doesn't exceed RESULT_MAX
+                    num1 = getRandomInt(effectiveMin, Math.min(maxVal, RESULT_MAX - effectiveMin));
+                    num2 = getRandomInt(effectiveMin, Math.min(maxVal, RESULT_MAX - num1));
                     result = num1 + num2;
                 } else if (opType === '-') {
                     operator = '-';
-                    // Subtraction: num1 - num2 = result, where result <= RESULT_MAX (always true if > 0)
-                    let a = getRandomInt(minVal, maxVal);
-                    let b = getRandomInt(minVal, a); // b <= a ensures result >= 0
+                    // Ensure num1 >= num2 and both are at least effectiveMin
+                    let a = getRandomInt(effectiveMin, maxVal);
+                    let b = getRandomInt(effectiveMin, a); // b <= a ensures result >= 0
                     num1 = a; 
                     num2 = b; 
                     result = num1 - num2;
@@ -169,17 +174,17 @@
                     return null;
                 }
                 
-                // Final check to ensure both numbers are within the required range
-                if (num1 >= minVal && num1 <= maxVal && num2 >= minVal && num2 <= maxVal && result <= RESULT_MAX) {
+                // Final check: numbers in range, result <= 20, numbers >= 1
+                if (num1 >= effectiveMin && num1 <= maxVal && num2 >= effectiveMin && num2 <= maxVal && result <= RESULT_MAX) {
                     return `${num1} ${operator} ${num2}`;
                 }
                 attempts++;
             }
-            // Fallback if loop fails, though highly unlikely with the current constraints
             return "Error +"; 
         }
 
         function generateEquations(minRange, maxRange, operationCode, numPages) {
+            // ... (remains the same)
             const totalEquations = numPages * EQUATIONS_PER_PAGE;
             const problems = [];
             const opTypes = [];
@@ -197,7 +202,7 @@
             return problems;
         }
 
-        // --- PDF Generation (Layout Refined) ---
+        // --- PDF Generation (Layout Fixed) ---
 
         function createPDF(allEquations, numPages, minRange, maxRange) {
             const { jsPDF } = window.jspdf;
@@ -208,8 +213,9 @@
             const pageHeight = doc.internal.pageSize.getHeight();
             const columnCount = 6;
             const rowCount = 10; 
-            const ANSWER_LINE_LENGTH = 35; // Increased line length for better writing space
-            
+            const ANSWER_LINE_LENGTH = 35; 
+            const TEXT_BASELINE_OFFSET = 4; // Adjusted for better vertical centering
+
             const contentWidth = pageWidth - 2 * margin;
             const equationWidth = contentWidth / columnCount; 
             
@@ -249,8 +255,8 @@
                     // 1. Draw the Equation (Left Justified: e.g., 3 + 3 = )
                     doc.text(eqText, x, y, { align: 'left' });
                     
-                    // 2. Draw the Answer Line to the right
-                    const lineY = y + 2; 
+                    // 2. Draw the Answer Line (To the right, vertically centered)
+                    const lineY = y + TEXT_BASELINE_OFFSET; // Use the adjusted offset
                     const lineStartX = x + doc.getTextWidth(eqText) + 5; 
                     const lineEndX = lineStartX + ANSWER_LINE_LENGTH; 
                     
@@ -265,6 +271,36 @@
             doc.save(`math_worksheet_${minRange}-${maxRange}_max20.pdf`);
         }
         
+        // --- Max Combinations Logic (Updated for Min 1 Constraint) ---
+        function calculateMaxCombinations(min, max, operationCode) {
+            let totalCombinations = 0;
+            const effectiveMin = Math.max(min, MIN_VALUE); // Start counting from 1
+
+            if (operationCode.includes('+')) {
+                for (let a = effectiveMin; a <= max; a++) {
+                    for (let b = effectiveMin; b <= max; b++) {
+                        // Addition constraint: result <= 20
+                        if (a + b <= RESULT_MAX) {
+                            totalCombinations++;
+                        }
+                    }
+                }
+            }
+
+            if (operationCode.includes('-')) {
+                for (let a = effectiveMin; a <= max; a++) {
+                    for (let b = effectiveMin; b <= max; b++) {
+                        // Subtraction constraint: result >= 0 (a >= b)
+                        if (a >= b) {
+                            totalCombinations++; 
+                        }
+                    }
+                }
+            }
+
+            return totalCombinations;
+        }
+
         // --- UI & Event Handling ---
 
         function updateSelection(containerId, selectedElement) {
@@ -277,7 +313,6 @@
         rangeButtons.addEventListener('click', (e) => {
             if (e.target.tagName === 'BUTTON') {
                 updateSelection('range-buttons', e.target);
-                // Trigger calculation after range change
                 maxPagesBtn.click();
             }
         });
@@ -285,7 +320,6 @@
         operationButtons.addEventListener('click', (e) => {
             if (e.target.tagName === 'BUTTON') {
                 updateSelection('operation-buttons', e.target);
-                // Trigger calculation after operation change
                 maxPagesBtn.click();
             }
         });
@@ -294,7 +328,7 @@
             const rangeBtn = document.querySelector('#range-buttons .selected-btn');
             const opBtn = document.querySelector('#operation-buttons .selected-btn');
 
-            const selectedRange = rangeBtn ? rangeBtn.dataset.range : '0-10';
+            const selectedRange = rangeBtn ? rangeBtn.dataset.range : '1-10';
             const [minRange, maxRange] = selectedRange.split('-').map(Number);
             const operationCode = opBtn ? opBtn.dataset.op : '+';
             const numPages = parseInt(document.getElementById('page-count').value) || 1;
@@ -312,7 +346,7 @@
             
             const header = document.createElement('div');
             header.className = 'text-center text-lg font-bold fredoka mb-4';
-            header.textContent = `Math Worksheet: ${minRange} to ${maxRange} (Max Result: ${RESULT_MAX})`;
+            header.textContent = `Math Worksheet: ${minRange} to ${maxRange} (Max Result: ${RESULT_MAX}, Min Value: ${MIN_VALUE})`;
             mathPreview.appendChild(header);
 
             const equationGrid = document.createElement('div');
@@ -321,7 +355,6 @@
             allEquations.slice(0, EQUATIONS_PER_PAGE).forEach(eq => {
                 const div = document.createElement('div');
                 div.className = 'equation';
-                // Displaying the equation with an answer line for preview
                 div.textContent = `${eq} = _________`; 
                 equationGrid.appendChild(div);
             });
@@ -338,54 +371,12 @@
             // 4. Set up Download Button with generated data
             downloadPdfBtn.onclick = () => createPDF(allEquations, numPages, minRange, maxRange);
         });
-
-        // Max Combinations Logic (Updated for Max Result Constraint)
-        function calculateMaxCombinations(min, max, operationCode) {
-            let totalCombinations = 0;
-            
-            if (operationCode.includes('+')) {
-                for (let a = min; a <= max; a++) {
-                    for (let b = min; b <= max; b++) {
-                        // Addition constraint: result <= 20
-                        if (a + b <= RESULT_MAX) {
-                            totalCombinations++;
-                        }
-                    }
-                }
-            }
-
-            if (operationCode.includes('-')) {
-                for (let a = min; a <= max; a++) {
-                    for (let b = min; b <= max; b++) {
-                        // Subtraction constraint: result >= 0 (a >= b)
-                        if (a >= b) {
-                            // Subtraction result constraint is implicitly satisfied if 0-20 numbers are used and result >= 0, 
-                            // as max result is 20 - 0 = 20.
-                            totalCombinations++; 
-                        }
-                    }
-                }
-            }
-
-            return totalCombinations;
-        }
-
-        maxPagesBtn.addEventListener('click', () => {
-            const { minRange, maxRange, operationCode } = getConfig();
-
-            const totalCombinations = calculateMaxCombinations(minRange, maxRange, operationCode);
-            const maxPages = Math.ceil(totalCombinations / EQUATIONS_PER_PAGE);
-            
-            maxCombinationsEl.textContent = 
-                `${totalCombinations.toLocaleString()} equations / ${maxPages} pages`;
-            document.getElementById('page-count').value = maxPages;
-        });
         
         // Initial Calculation on Load
         document.addEventListener('DOMContentLoaded', () => {
-            const totalCombinations = calculateMaxCombinations(0, 10, '+');
+            const totalCombinations = calculateMaxCombinations(1, 10, '+');
             const maxPages = Math.ceil(totalCombinations / EQUATIONS_PER_PAGE);
-            maxCombinationsEl.textContent = `${totalCombinations} equations / ${maxPages} pages (Default: Addition 0-10)`;
+            maxCombinationsEl.textContent = `${totalCombinations} equations / ${maxPages} pages (Default: Addition 1-10)`;
         });
 
     </script>
