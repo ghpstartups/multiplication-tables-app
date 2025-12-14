@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>First Grade Math Worksheet Generator</title>
+    <title>Printable First Grade Math Generator</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -69,7 +69,7 @@
             background-color: #2980b9;
         }
         
-        /* Preview Styling - Mimics A4 Paper Layout */
+        /* Preview Styling - Shows a layout that roughly mimics the PDF */
         #preview-area {
             margin-top: 30px;
             padding-top: 20px;
@@ -77,34 +77,37 @@
         }
         .page-preview {
             border: 1px solid #333;
-            width: 595px; /* A4 width at 72dpi */
-            height: 842px; /* A4 height at 72dpi */
+            width: 595px; /* A4 width */
+            height: 842px; /* A4 height */
             margin: 20px auto;
             padding: 30px;
             background-color: white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            overflow: hidden; /* Ensure content stays within the page */
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            overflow: hidden; 
         }
         .equation-grid {
+            /* 10 rows and 6 columns, perfectly matching the 60 problems per page */
             display: grid;
             grid-template-columns: repeat(6, 1fr); 
-            gap: 20px 5px; 
-            font-size: 16pt;
-            width: 100%;
+            /* Distribute problems vertically from near the top to near the bottom */
+            grid-template-rows: repeat(10, 1fr); 
+            height: 100%; /* Fill the preview height */
+            font-size: 14pt; /* Smaller font for better fit */
         }
         .equation {
-            text-align: right;
-            padding: 2px 5px;
+            /* Left justified within its column */
+            text-align: left; 
+            padding: 0 5px;
             line-height: 1.2;
         }
     </style>
 </head>
 <body>
 
-    <h1>🧠 First Grade Math Worksheet Generator</h1>
+    <h1>🧠 Printable Math Worksheet Generator</h1>
 
     <div id="range-section" class="config-section">
-        <h3>1. Select Number Range (e.g., $9 - 4$ is allowed, $4 - 9$ is NOT):</h3>
+        <h3>1. Select Number Range:</h3>
         <label><input type="radio" name="range" value="0-10" checked> 0-10</label>
         <label><input type="radio" name="range" value="10-20"> 10-20</label>
         <label><input type="radio" name="range" value="0-20"> 0-20</label>
@@ -153,12 +156,12 @@
 
             if (opType === '+') {
                 operator = '+';
-                // 5+6 and 6+5 are distinct and possible
+                // 5+6 and 6+5 are distinct
                 num1 = getRandomInt(minVal, maxVal);
                 num2 = getRandomInt(minVal, maxVal);
             } else if (opType === '-') {
                 operator = '-';
-                // Ensure result is non-negative (larger number first)
+                // Ensure result is positive or zero (larger number first)
                 let a = getRandomInt(minVal, maxVal);
                 let b = getRandomInt(minVal, maxVal);
                 num1 = Math.max(a, b); 
@@ -168,7 +171,8 @@
             }
             
             // Format: num1 operator num2 = 
-            return `${num1} ${operator} ${num2} =`;
+            // Note: We only generate the equation here; the answer line is drawn in the PDF logic.
+            return `${num1} ${operator} ${num2}`;
         }
 
         // Main function to generate all required equations
@@ -191,16 +195,24 @@
             return problems;
         }
 
+        // THE CRITICAL PDF GENERATION FUNCTION (Updated for layout)
         function createPDF(allEquations, numPages, minRange, maxRange) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'pt', format: 'a4' });
             
-            const margin = 36; // 0.5 inch
+            const margin = 36; // 0.5 inch margin (top/bottom/left/right)
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
             const columnCount = 6;
-            const equationHeight = 22; // Vertical space
-            const equationWidth = (pageWidth - 2 * margin) / columnCount;
+            const rowCount = 10; // 60 equations / 6 columns = 10 rows
+            
+            const contentWidth = pageWidth - 2 * margin;
+            const equationWidth = contentWidth / columnCount; // Width of each column
+            
+            // Vertical spacing to nicely fill the page
+            const startY = margin + 30; // Start below the title
+            const contentHeight = pageHeight - startY - margin;
+            const equationHeight = contentHeight / rowCount; 
 
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(0, 0, 0); // Black
@@ -217,27 +229,28 @@
 
                 // Page Title
                 doc.setFontSize(18);
-                doc.text(`Math Worksheet (Range: ${minRange}-${maxRange})`, pageWidth / 2, margin / 2 + 10, { align: 'center' });
-                doc.line(margin, margin / 2 + 15, pageWidth - margin, margin / 2 + 15);
+                doc.text(`Math Worksheet (Range: ${minRange}-${maxRange})`, pageWidth / 2, margin + 10, { align: 'center' });
+                doc.line(margin, margin + 15, pageWidth - margin, margin + 15);
 
-                doc.setFontSize(14); // Set font size for equations
+                doc.setFontSize(12); // Reduced font size for better fit
                 
                 pageEquations.forEach((eq, index) => {
                     const col = index % columnCount;
                     const row = Math.floor(index / columnCount);
 
-                    // X-coordinate: Right-align text within its column
-                    const x = margin + (col * equationWidth) + equationWidth; 
-                    // Y-coordinate: Start point of the text line
-                    const y = margin + 25 + (row * equationHeight); // Start lower than the title
+                    // X-coordinate: Left-align text within its column
+                    const x = margin + (col * equationWidth); 
+                    // Y-coordinate: Vertical position based on row
+                    const y = startY + (row * equationHeight);
                     
-                    doc.text(eq, x, y, { align: 'right' });
+                    // 1. Draw the Equation (Left Justified)
+                    doc.text(`${eq} =`, x, y, { align: 'left' });
                     
-                    // Draw a line for the answer
+                    // 2. Draw the Answer Line (Line to write the answer)
                     const lineY = y + 2; 
-                    const lineLength = 40; // Length of the answer line
-                    const lineEndX = x;
-                    const lineStartX = x - lineLength; 
+                    const lineStartX = x + doc.getTextWidth(`${eq} = `) + 5; // Start line after the equals sign
+                    const lineLength = 20; // Length of the answer line
+                    const lineEndX = lineStartX + lineLength; 
                     
                     doc.line(lineStartX, lineY, lineEndX, lineY); 
                 });
@@ -274,7 +287,8 @@
             allEquations.slice(0, EQUATIONS_PER_PAGE).forEach(eq => {
                 const div = document.createElement('div');
                 div.className = 'equation';
-                div.textContent = eq;
+                // Add the equals sign here for preview clarity
+                div.textContent = `${eq} = ________`; 
                 equationGrid.appendChild(div);
             });
 
@@ -285,12 +299,10 @@
             downloadPdfBtn.onclick = () => createPDF(allEquations, numPages, minRange, maxRange);
         }
 
-        // --- Event Listeners ---
+        // --- Event Listeners and Max Combinations ---
 
-        // Generate button click
         generateBtn.addEventListener('click', generateAndPreview);
 
-        // Operation Checkbox Logic (Both automatically selects Add/Sub)
         document.getElementById('both-op').addEventListener('change', (e) => {
             const isChecked = e.target.checked;
             document.getElementById('add-op').checked = isChecked;
@@ -299,7 +311,6 @@
             document.getElementById('sub-op').disabled = isChecked;
         });
 
-        // Calculate Max Combinations Logic (Approximate Maximum)
         maxPagesBtn.addEventListener('click', () => {
             const selectedRange = document.querySelector('input[name="range"]:checked').value;
             const [min, max] = selectedRange.split('-').map(Number);
@@ -310,8 +321,7 @@
             // Addition: A+B, B+A are distinct. Total = count * count
             totalCombinations += count * count; 
             
-            // Subtraction: A-B where A >= B.
-            // Example 0-10 (count=11): 11 + 10 + 9 + ... + 1 (55 combinations + 1 for 0-0=0)
+            // Subtraction: A-B where A >= B. Total combinations = (n+1) * n / 2 where n is the number of integers.
             for (let a = min; a <= max; a++) {
                 for (let b = min; b <= max; b++) {
                     if (a >= b) {
@@ -328,7 +338,6 @@
         
         // Initial max combinations calculation for 0-10 on load
         document.addEventListener('DOMContentLoaded', () => {
-            // Default range is 0-10.
             const min = 0;
             const max = 10;
             const count = max - min + 1;
