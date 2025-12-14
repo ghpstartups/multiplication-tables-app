@@ -14,47 +14,49 @@
             font-family: 'Inter', sans-serif; 
             background-color: #f3f4f6; 
             min-height: 100vh;
-            padding-bottom: 50px;
+            padding-bottom: 40px;
         }
         .fredoka { 
             font-family: 'Fredoka One', cursive; 
             font-variant-numeric: tabular-nums; 
         }
         .app-container {
-            max-width: 900px;
+            width: 100%;
+            max-width: 800px;
             margin: 0 auto;
-            padding: 1.5rem;
+            padding: 1rem;
         }
         
-        /* Cards */
+        /* Configuration Cards */
         .config-section { 
-            margin-bottom: 15px; 
-            padding: 20px; 
+            margin-bottom: 12px; 
+            padding: 16px; 
             border-radius: 12px; 
             background-color: #ffffff;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
             border: 1px solid #e5e7eb;
         }
 
         /* Buttons */
         .option-btn { 
             transition: all 0.2s ease; 
-            padding: 12px;
+            padding: 10px;
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100%;
+            width: 100%;
         }
         .option-btn small {
             font-weight: 400;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             opacity: 0.8;
-            margin-top: 4px;
+            margin-top: 2px;
         }
-        .option-btn:active { transform: scale(0.98); }
+        .option-btn:active { transform: scale(0.97); }
         .selected-btn { 
             background: #2563eb !important; 
             color:#fff !important; 
@@ -63,70 +65,73 @@
         }
         .option-btn:not(.selected-btn):hover { background-color: #f0f9ff; }
 
-        /* PDF Iframe */
+        /* Responsive Iframe Container */
+        .iframe-container {
+            width: 100%;
+            height: 75vh; /* Takes up 75% of viewport height */
+            background-color: #525659;
+            border-radius: 8px;
+            overflow: hidden;
+        }
         #pdf-preview-frame {
             width: 100%;
-            height: 900px; /* Tall enough to see a full page */
+            height: 100%;
             border: none;
-            border-radius: 8px;
-            background-color: #525659;
         }
     </style>
 </head>
-<body class="p-4">
+<body class="bg-gray-100">
 
     <div class="app-container">
-        <h1 class="text-3xl md:text-4xl fredoka text-slate-800 text-center mb-6">Math Worksheet Generator</h1>
+        <h1 class="text-2xl md:text-3xl fredoka text-slate-800 text-center mb-4">Math Worksheet Generator</h1>
 
-        <div class="grid grid-cols-1 gap-4">
+        <div class="flex flex-col gap-3">
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div id="range-section" class="config-section">
-                    <h3 class="text-lg font-bold text-slate-700 mb-3">1. Select Range</h3>
-                    <div id="range-buttons" class="grid grid-cols-2 gap-3 h-24">
-                        <button type="button" data-mode="operands-10" class="option-btn rounded-lg border border-gray-200 bg-gray-50 text-gray-600 selected-btn">
-                            <span>Operands 1-10</span>
-                            <small>(e.g. 10 + 10 = 20)</small>
-                        </button>
-                        <button type="button" data-mode="sums-20" class="option-btn rounded-lg border border-gray-200 bg-gray-50 text-gray-600">
-                            <span>Sums up to 20</span>
-                            <small>(e.g. 15 + 5 = 20)</small>
-                        </button>
-                    </div>
+            <div id="range-section" class="config-section">
+                <h3 class="text-md font-bold text-slate-700 mb-2">1. Select Range</h3>
+                <div id="range-buttons" class="grid grid-cols-2 gap-3">
+                    <button type="button" data-mode="operands-10" class="option-btn rounded-lg border border-gray-200 bg-gray-50 text-gray-600 selected-btn">
+                        <span>Operands 1-10</span>
+                        <small>(e.g. 10 + 10 = 20)</small>
+                    </button>
+                    <button type="button" data-mode="sums-20" class="option-btn rounded-lg border border-gray-200 bg-gray-50 text-gray-600">
+                        <span>Sums up to 20</span>
+                        <small>(e.g. 15 + 5 = 20)</small>
+                    </button>
                 </div>
+            </div>
 
-                <div id="operation-section" class="config-section">
-                    <h3 class="text-lg font-bold text-slate-700 mb-3">2. Select Operation</h3>
-                    <div id="operation-buttons" class="grid grid-cols-3 gap-2 h-24">
-                        <button type="button" data-op="+" class="option-btn rounded-lg border border-gray-200 bg-gray-50 text-gray-600 selected-btn">Addition (+)</button>
-                        <button type="button" data-op="-" class="option-btn rounded-lg border border-gray-200 bg-gray-50 text-gray-600">Subtract (-)</button>
-                        <button type="button" data-op="+-" class="option-btn rounded-lg border border-gray-200 bg-gray-50 text-gray-600">Both</button>
-                    </div>
+            <div id="operation-section" class="config-section">
+                <h3 class="text-md font-bold text-slate-700 mb-2">2. Select Operation</h3>
+                <div id="operation-buttons" class="grid grid-cols-3 gap-2">
+                    <button type="button" data-op="+" class="option-btn rounded-lg border border-gray-200 bg-gray-50 text-gray-600 selected-btn">Addition</button>
+                    <button type="button" data-op="-" class="option-btn rounded-lg border border-gray-200 bg-gray-50 text-gray-600">Subtract</button>
+                    <button type="button" data-op="+-" class="option-btn rounded-lg border border-gray-200 bg-gray-50 text-gray-600">Both</button>
                 </div>
             </div>
 
             <div class="config-section border-l-4 border-l-blue-500">
-                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div class="flex items-center gap-3">
-                        <label class="font-semibold text-gray-700">Pages to Generate:</label>
-                        <input type="number" id="page-count" value="1" min="1" max="100" class="w-20 text-center font-bold text-lg py-2 px-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 outline-none" />
-                    </div>
+                <div class="text-center mb-4">
+                    <p class="text-gray-600 text-sm uppercase tracking-wide font-semibold">Generating All Possible:</p>
+                    <p id="stats-display" class="text-xl md:text-2xl font-bold text-blue-700 mt-1">
+                        ...
+                    </p>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6">
-                    <button id="generate-btn" class="bg-slate-800 text-white py-3 px-6 rounded-xl text-lg fredoka hover:bg-slate-900 active:scale-95 transition-transform shadow-md">
-                        Generate Preview
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button id="generate-btn" class="bg-slate-800 text-white py-3 rounded-lg text-lg fredoka hover:bg-slate-900 active:scale-95 transition-transform shadow-md w-full">
+                        Refresh / Shuffle
                     </button>
-                    <button id="download-btn" class="bg-green-600 text-white py-3 px-6 rounded-xl text-lg fredoka hover:bg-green-700 active:scale-95 transition-transform shadow-md hidden">
+                    <button id="download-btn" class="bg-green-600 text-white py-3 rounded-lg text-lg fredoka hover:bg-green-700 active:scale-95 transition-transform shadow-md hidden w-full">
                         Download PDF
                     </button>
                 </div>
             </div>
         </div>
 
-        <div class="mt-8">
-            <h3 class="text-xl font-bold text-slate-700 mb-3">PDF Preview (Scroll for more pages)</h3>
-            <div class="bg-white p-2 rounded-xl shadow-lg border border-gray-200">
+        <div class="mt-6">
+            <h3 class="text-lg font-bold text-slate-700 mb-2 pl-1">PDF Preview</h3>
+            <div class="iframe-container shadow-lg">
                 <iframe id="pdf-preview-frame" title="PDF Preview"></iframe>
             </div>
         </div>
@@ -135,112 +140,108 @@
 
     <script>
         const EQUATIONS_PER_PAGE = 60;
-        const MIN_OPERAND = 1; // Never allow 0
-
+        
         // UI Elements
         const generateBtn = document.getElementById('generate-btn');
         const downloadBtn = document.getElementById('download-btn');
-        const pageCountInput = document.getElementById('page-count');
         const rangeButtons = document.getElementById('range-buttons');
         const operationButtons = document.getElementById('operation-buttons');
+        const statsDisplay = document.getElementById('stats-display');
         const pdfFrame = document.getElementById('pdf-preview-frame');
 
         let lastGeneratedPDF = null;
         let lastFileName = "worksheet.pdf";
+        let currentEquations = [];
 
-        function getRandomInt(min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
-        }
-
-        // --- Core Logic: Problem Generation ---
-        function generateProblem(opType, mode) {
-            let num1, num2, operator, result;
-            let attempts = 0;
-            
-            // Mode Definitions
-            // mode === 'operands-10'  -> Both A and B must be <= 10.
-            // mode === 'sums-20'      -> Sum must be <= 20 (Add) or Minuend <= 20 (Sub).
-
-            while (attempts < 200) { 
-                if (opType === '+') {
-                    operator = '+';
-
-                    if (mode === 'operands-10') {
-                        // Logic: A and B are 1-10
-                        num1 = getRandomInt(1, 10);
-                        num2 = getRandomInt(1, 10);
-                    } else {
-                        // Logic: Sums up to 20
-                        // A is 1-19, B is calculated to fit within 20
-                        num1 = getRandomInt(1, 19); 
-                        const maxB = 20 - num1;
-                        if (maxB < 1) { attempts++; continue; }
-                        num2 = getRandomInt(1, maxB);
-                    }
-                    result = num1 + num2;
-
-                } else {
-                    operator = '-';
-                    // Subtraction Logic:
-                    if (mode === 'operands-10') {
-                        // Strictly interpret "Operands 1-10" for subtraction:
-                        // Usually implies Answer is within 10-ish or Operands are small.
-                        // We will allow the Minuend (top number) to be up to 20, 
-                        // but ensure the answer isn't huge? 
-                        // Actually, standard is: Minuend up to 20, Subtrahend up to 10?
-                        // Let's stick to simple: A and B generated such that result is valid.
-                        // Let's mirror Addition:
-                        // Top number (num1) up to 20. Bottom number (num2) 1-20.
-                        num1 = getRandomInt(2, 20);
-                        num2 = getRandomInt(1, num1 - 1); // Ensure result > 0
-                    } else {
-                        // Sums up to 20 mode (implies numbers involved are <= 20)
-                        num1 = getRandomInt(2, 20);
-                        num2 = getRandomInt(1, num1 - 1);
-                    }
-                    result = num1 - num2;
-                }
-                
-                // FINAL SAFETY CHECK (Applies to all modes)
-                // 1. No zeroes allowed in operands or result
-                if (num1 >= 1 && num2 >= 1 && result >= 1) {
-                    
-                    // Extra check for "Operands 1-10" mode strictness if desired
-                    if (mode === 'operands-10' && opType === '+') {
-                        if (num1 > 10 || num2 > 10) { attempts++; continue; }
-                    }
-
-                    return `${num1} ${operator} ${num2}`;
-                }
-                attempts++;
+        // Fisher-Yates Shuffle Algorithm to randomize the order
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
             }
-            return "1 + 1"; // Fallback if logic fails (rare)
+            return array;
         }
 
-        // --- Logic: Main Generation ---
-        function generateWorksheet() {
+        // --- Core Logic: Generate ALL Valid Combinations ---
+        function generateUniverse(mode, opCode) {
+            let equations = [];
+            const addProblems = [];
+            const subProblems = [];
+
+            // 1. Generate ADDITION problems
+            if (opCode.includes('+')) {
+                if (mode === 'operands-10') {
+                    // 1..10 + 1..10
+                    for (let a = 1; a <= 10; a++) {
+                        for (let b = 1; b <= 10; b++) {
+                            addProblems.push(`${a} + ${b}`);
+                        }
+                    }
+                } else {
+                    // Sums up to 20 (A + B <= 20)
+                    for (let a = 1; a <= 19; a++) {
+                        for (let b = 1; b <= 19; b++) {
+                            if (a + b <= 20) {
+                                addProblems.push(`${a} + ${b}`);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Generate SUBTRACTION problems
+            if (opCode.includes('-')) {
+                if (mode === 'operands-10') {
+                    // Inverse of "Operands 1-10". 
+                    // To keep it simple: Result 1..10, Subtrahend 1..10
+                    // This implies Minuend is between 2 and 20.
+                    for (let a = 2; a <= 20; a++) { // Minuend
+                        for (let b = 1; b < a; b++) { // Subtrahend
+                            let result = a - b;
+                            // Check "Operands 1-10" feel: 
+                            // Usually means we are testing single digit facts or facts derived from 10+10.
+                            // We filter to ensure Subtrahend <= 10 AND Result <= 10
+                            if (b <= 10 && result <= 10) {
+                                subProblems.push(`${a} - ${b}`);
+                            }
+                        }
+                    }
+                } else {
+                    // Sums up to 20 (Inverse) -> Minuend up to 20.
+                    for (let a = 2; a <= 20; a++) {
+                        for (let b = 1; b < a; b++) {
+                            // Only constraint is result > 0 (handled by b < a)
+                            subProblems.push(`${a} - ${b}`);
+                        }
+                    }
+                }
+            }
+
+            // Combine and Shuffle
+            equations = [...addProblems, ...subProblems];
+            return shuffleArray(equations);
+        }
+
+        // --- Logic: Main Controller ---
+        function updateApp() {
             const rangeBtn = document.querySelector('#range-buttons .selected-btn');
             const opBtn = document.querySelector('#operation-buttons .selected-btn');
-            const numPages = parseInt(pageCountInput.value) || 1;
-
-            const mode = rangeBtn.dataset.mode; // 'operands-10' or 'sums-20'
+            
+            const mode = rangeBtn.dataset.mode;
             const opCode = opBtn.dataset.op;
-            
-            const totalEquations = numPages * EQUATIONS_PER_PAGE;
-            const problems = [];
-            const opTypes = [];
-            
-            if (opCode.includes('+')) opTypes.push('+');
-            if (opCode.includes('-')) opTypes.push('-');
 
-            // Generate Equations
-            for (let i = 0; i < totalEquations; i++) {
-                const op = opTypes[getRandomInt(0, opTypes.length - 1)];
-                const problem = generateProblem(op, mode);
-                problems.push(problem);
-            }
+            // 1. Generate All Equations
+            currentEquations = generateUniverse(mode, opCode);
+            
+            // 2. Calculate Stats
+            const totalEq = currentEquations.length;
+            const totalPages = Math.ceil(totalEq / EQUATIONS_PER_PAGE);
 
-            generatePDFBlob(problems, numPages, mode);
+            // 3. Update Text
+            statsDisplay.innerHTML = `${totalEq} Equations <span class="text-gray-400 mx-2">|</span> ${totalPages} Pages`;
+
+            // 4. Generate PDF
+            generatePDFBlob(currentEquations, totalPages, mode);
         }
 
         // --- Logic: PDF Creation ---
@@ -252,7 +253,6 @@
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
             
-            // Grid Layout
             const columnCount = 6;
             const rowCount = 10;
             const contentWidth = pageWidth - 2 * margin;
@@ -268,9 +268,9 @@
             const titleText = mode === 'operands-10' ? "Operands 1-10" : "Sums up to 20";
 
             for (let pageNum = 0; pageNum < numPages; pageNum++) {
-                if (pageNum > 0) doc.addPage(); // This ensures multi-page PDF
+                if (pageNum > 0) doc.addPage();
 
-                // 1. Header
+                // Header
                 doc.setFontSize(18);
                 doc.setFont('helvetica', 'bold');
                 doc.text(`Math Worksheet`, pageWidth / 2, margin + 15, { align: 'center' });
@@ -278,17 +278,16 @@
                 doc.setFont('helvetica', 'normal');
                 doc.text(`Difficulty: ${titleText}`, pageWidth / 2, margin + 30, { align: 'center' });
                 
-                // Top line
                 doc.setLineWidth(1);
                 doc.line(margin, startY, pageWidth - margin, startY);
 
-                // Get only equations for THIS page
+                // Get equations for this page
                 const startIndex = pageNum * EQUATIONS_PER_PAGE;
                 const pageEquations = allEquations.slice(startIndex, startIndex + EQUATIONS_PER_PAGE);
 
                 doc.setFontSize(12);
                 
-                // 2. Render Equations
+                // Render Equations
                 pageEquations.forEach((eq, index) => {
                     const col = index % columnCount;
                     const row = Math.floor(index / columnCount);
@@ -307,7 +306,7 @@
                     doc.line(lineStart, y, lineEnd, y);
                 });
 
-                // 3. Vertical Separator Lines
+                // Vertical Separator Lines
                 doc.setLineWidth(0.5);
                 const totalGridHeight = rowCount * equationHeight;
                 for(let c = 1; c < columnCount; c++) {
@@ -315,23 +314,19 @@
                     doc.line(lineX, startY, lineX, startY + totalGridHeight);
                 }
 
-                // Bottom line
+                // Bottom Border
                 doc.setLineWidth(1);
                 doc.line(margin, startY + totalGridHeight, pageWidth - margin, startY + totalGridHeight);
 
-                // 4. Footer
+                // Footer
                 doc.setFontSize(9);
                 doc.text(`Page ${pageNum + 1} of ${numPages}`, pageWidth / 2, pageHeight - 20, { align: 'center' });
             }
 
-            // Output generated PDF as Blob URL
             lastGeneratedPDF = doc.output('bloburl');
             lastFileName = `math_worksheet_${mode}.pdf`;
             
-            // Set Iframe source
             pdfFrame.src = lastGeneratedPDF;
-
-            // Show Download Button
             downloadBtn.classList.remove('hidden');
         }
 
@@ -339,6 +334,7 @@
         function updateSelection(containerId, selectedElement) {
             document.getElementById(containerId).querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected-btn'));
             selectedElement.classList.add('selected-btn');
+            updateApp(); // Auto trigger
         }
 
         rangeButtons.addEventListener('click', (e) => {
@@ -351,7 +347,7 @@
             if (btn) updateSelection('operation-buttons', btn);
         });
 
-        generateBtn.addEventListener('click', generateWorksheet);
+        generateBtn.addEventListener('click', updateApp); // Reshuffle
 
         downloadBtn.addEventListener('click', () => {
             if (lastGeneratedPDF) {
@@ -366,7 +362,7 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            generateWorksheet();
+            updateApp();
         });
 
     </script>
