@@ -193,14 +193,9 @@
             if (opCode.includes('-')) {
                 if (mode === 'operands-10') {
                     // Inverse of "Operands 1-10". 
-                    // To keep it simple: Result 1..10, Subtrahend 1..10
-                    // This implies Minuend is between 2 and 20.
                     for (let a = 2; a <= 20; a++) { // Minuend
                         for (let b = 1; b < a; b++) { // Subtrahend
                             let result = a - b;
-                            // Check "Operands 1-10" feel: 
-                            // Usually means we are testing single digit facts or facts derived from 10+10.
-                            // We filter to ensure Subtrahend <= 10 AND Result <= 10
                             if (b <= 10 && result <= 10) {
                                 subProblems.push(`${a} - ${b}`);
                             }
@@ -210,7 +205,6 @@
                     // Sums up to 20 (Inverse) -> Minuend up to 20.
                     for (let a = 2; a <= 20; a++) {
                         for (let b = 1; b < a; b++) {
-                            // Only constraint is result > 0 (handled by b < a)
                             subProblems.push(`${a} - ${b}`);
                         }
                     }
@@ -298,10 +292,13 @@
                     const text = `${eq} =`;
                     doc.text(text, x, y);
                     
-                    // Answer Line
+                    // Answer Line - STANDARD LENGTH FIXED
                     const textWidth = doc.getTextWidth(text);
                     const lineStart = x + textWidth + 5;
-                    const lineEnd = margin + ((col+1) * equationWidth) - 12; 
+                    // Standard length for approx "____" (32pt)
+                    const FIXED_LINE_LENGTH = 32; 
+                    const lineEnd = lineStart + FIXED_LINE_LENGTH;
+                    
                     doc.setLineWidth(0.5);
                     doc.line(lineStart, y, lineEnd, y);
                 });
