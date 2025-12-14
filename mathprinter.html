@@ -1,425 +1,413 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Printable Math Worksheet</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> 
+    <title>Printable Math Worksheet Generator (Operands >= 1)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            touch-action: manipulation; 
+            background-color: #f4f4f9; 
+            min-height: 100vh;
+        }
+        .fredoka { 
+            font-family: 'Fredoka One', cursive; 
+            font-variant-numeric: tabular-nums; 
+        }
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        .config-section { 
+            margin-bottom: 20px; 
+            padding: 15px; 
+            border-radius: 12px; 
+            background-color: #ffffff;
+            box-shadow: 0 4px 6px rgba[0,0,0,0.1]; 
+        }
+        .option-btn { 
+            transition: transform 0.1s ease, background-color 0.2s ease, border-color 0.2s ease; 
+            padding: 12px;
+            font-size: 1rem;
+        }
+        .option-btn:active { 
+            transform: scale(0.95); 
+        }
+        .selected-btn { 
+            background: #22c55e !important; 
+            color:#fff !important; 
+            border-color:#16a34a !important; 
+            box-shadow: 0 4px 6px rgba[34,197,94,0.3];
+        }
+        .option-btn:not(.selected-btn):hover {
+            background-color: #eff6ff; 
+        }
 
-  <style>
-    /* Match the "game" mobile behavior */
-    body {
-      font-family: 'Inter', sans-serif;
-      touch-action: manipulation;
-      overflow: hidden;
-      position: fixed;
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding-top: 0.5rem;
-      background: #dbeafe; /* tailwind blue-100 */
-    }
-    .fredoka { font-family: 'Fredoka One', cursive; font-variant-numeric: tabular-nums; }
-
-    /* Button tap feel */
-    .tap-btn {
-      transition: transform 0.1s ease, background-color 0.2s ease, border-color 0.2s ease;
-    }
-    .tap-btn:active { transform: scale(0.95); }
-
-    /* Selected button style (same spirit as game) */
-    .selected-btn {
-      background: #22c55e !important;
-      color: #fff !important;
-      border-color: #16a34a !important;
-    }
-
-    .modal-enter { animation: modal-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-    @keyframes modal-in { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
-
-    /* Scroll containers styled like game */
-    .scrollable-list { -webkit-overflow-scrolling: touch; }
-    .scrollable-list::-webkit-scrollbar { width: 4px; height: 4px; }
-    .scrollable-list::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.2); border-radius: 4px; }
-
-    /* Preview page (responsive) */
-    .page-preview {
-      background: white;
-      border: 1px solid rgba(0,0,0,0.2);
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
-      width: 100%;
-      max-width: 595px; /* A4 width at 72dpi */
-      aspect-ratio: 595 / 842; /* A4 ratio */
-      padding: 16px;
-      overflow: hidden;
-    }
-    .equation-grid {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      grid-template-rows: repeat(10, 1fr);
-      height: 100%;
-      gap: 0;
-      font-size: clamp(10px, 1.8vw, 14pt);
-    }
-    .equation {
-      padding: 0 4px;
-      line-height: 1.2;
-      display: flex;
-      align-items: center;
-      white-space: nowrap;
-    }
-    .page-number {
-      text-align: center;
-      font-size: 10pt;
-      padding-top: 8px;
-    }
-
-    /* Remove number spinners (like game) */
-    input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-    input[type=number] { -moz-appearance: textfield; }
-
-    /* Orientation lock (optional like game) */
-    @media (orientation: landscape) and (max-height: 500px) {
-      #app-shell { display: none !important; }
-      #orientation-lock { display: flex; }
-    }
-  </style>
+        /* Preview Styling */
+        .page-preview {
+            border: 1px solid #333;
+            width: 595px; 
+            height: 842px; 
+            margin: 20px auto;
+            padding: 30px;
+            background-color: white;
+            box-shadow: 0 4px 10px rgba[0,0,0,0.1];
+        }
+        .equation-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr); 
+            grid-template-rows: repeat(10, 1fr); 
+            height: 100%; 
+            font-size: 14pt; 
+            gap: 0;
+        }
+        .equation {
+            text-align: left;
+            padding: 0 5px;
+            line-height: 1.2;
+            display: flex;
+            align-items: center;
+        }
+        .page-number {
+            text-align: center;
+            padding-top: 15px;
+            font-size: 10pt;
+        }
+    </style>
 </head>
+<body class="bg-blue-100 p-4">
 
-<body class="bg-blue-100 flex flex-col items-center justify-start p-1">
+    <div class="app-container">
+        <h1 class="text-3xl md:text-4xl fredoka text-blue-800 text-center mb-6">Printable Math Worksheet</h1>
 
-  <!-- Orientation lock overlay (same idea as game) -->
-  <div id="orientation-lock" class="hidden fixed inset-0 bg-blue-100 z-50 flex-col items-center justify-center text-center p-4">
-    <svg class="w-16 h-16 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"/>
-    </svg>
-    <h2 class="text-2xl fredoka text-blue-800 mt-4">Please rotate your device</h2>
-    <p class="text-blue-600 mt-2">This worksheet tool is best used in portrait mode.</p>
-  </div>
+        <div id="range-section" class="config-section">
+            <h3 class="text-xl font-semibold text-gray-700 mb-3">1. Select Number Range (Operands cannot be 0):</h3>
+            <div id="range-buttons" class="grid grid-cols-3 gap-3">
+                <button type="button" data-range="1-10" class="option-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700 selected-btn">1 - 10</button>
+                <button type="button" data-range="10-20" class="option-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700">10 - 20</button>
+                <button type="button" data-range="1-20" class="option-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700">1 - 20</button>
+            </div>
+        </div>
 
-  <div id="app-shell" class="w-full max-w-sm px-2 modal-enter">
+        <div id="operation-section" class="config-section">
+            <h3 class="text-xl font-semibold text-gray-700 mb-3">2. Select Operations:</h3>
+            <div id="operation-buttons" class="grid grid-cols-3 gap-3">
+                <button type="button" data-op="+" class="option-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700 selected-btn">Addition (+)</button>
+                <button type="button" data-op="-" class="option-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700">Subtraction (-)</button>
+                <button type="button" data-op="+-" class="option-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700">Both (+ & -)</button>
+            </div>
+        </div>
 
-    <!-- Header -->
-    <div class="text-center pt-2">
-      <h1 class="text-2xl md:text-3xl fredoka text-blue-800">Printable Math Worksheet</h1>
-      <p class="text-xs text-blue-700/80 mt-1">Generate, preview, then download a PDF.</p>
+        <div id="page-section" class="config-section">
+            <h3 class="text-xl font-semibold text-gray-700 mb-3">3. Number of Pages (60 Equations per page):</h3>
+            <div class="flex items-center gap-4">
+                <input type="number" id="page-count" value="1" min="1" class="w-20 text-center text-lg py-1 px-2 border-2 border-gray-300 rounded-lg focus:border-blue-500" />
+                <button id="max-pages-btn" class="bg-orange-500 text-white py-2 px-4 rounded-full text-sm hover:bg-orange-600 active:scale-95 transition-transform shadow-md fredoka">Calculate Max</button>
+            </div>
+            <p class="text-sm text-gray-500 mt-2">Max combinations: <span id="max-combinations" class="font-bold"></span></p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 mt-4">
+            <button id="generate-btn" class="flex-1 bg-blue-500 text-white py-3 px-8 rounded-full text-xl fredoka hover:bg-blue-600 active:scale-95 transition-transform shadow-lg">Generate & Preview</button>
+            <button id="download-pdf-btn" class="flex-1 bg-green-500 text-white py-3 px-8 rounded-full text-xl fredoka hover:bg-green-600 active:scale-95 transition-transform shadow-lg hidden">Download PDF</button>
+        </div>
+
+        <div id="preview-area" class="mt-8 border-t-2 border-gray-300 pt-6">
+            <h3 class="text-xl font-semibold text-gray-700 mb-3">4. Preview (First Page)</h3>
+            <div id="math-preview" class="page-preview overflow-y-auto">
+                <p class="text-center text-gray-500 pt-4">Worksheet preview will appear here. Click "Calculate Max" or "Generate & Preview" to start.</p>
+            </div>
+        </div>
     </div>
 
-    <!-- Config card -->
-    <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl p-4 mt-3">
-      <!-- 1) Range -->
-      <div class="mb-4">
-        <h3 class="text-sm font-semibold text-gray-700 mb-2">1) Select Number Range (Operands cannot be 0):</h3>
-        <div id="range-buttons" class="grid grid-cols-3 gap-2">
-          <button type="button" data-range="1-10"  class="tap-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700 py-2 selected-btn">1 - 10</button>
-          <button type="button" data-range="10-20" class="tap-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700 py-2">10 - 20</button>
-          <button type="button" data-range="1-20"  class="tap-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700 py-2">1 - 20</button>
-        </div>
-      </div>
 
-      <!-- 2) Ops -->
-      <div class="mb-4">
-        <h3 class="text-sm font-semibold text-gray-700 mb-2">2) Select Operations:</h3>
-        <div id="operation-buttons" class="grid grid-cols-3 gap-2">
-          <button type="button" data-op="+"  class="tap-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700 py-2 selected-btn">+ Add</button>
-          <button type="button" data-op="-"  class="tap-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700 py-2">− Sub</button>
-          <button type="button" data-op="+-" class="tap-btn rounded-lg border-2 border-gray-300 bg-gray-100 text-gray-700 py-2">± Both</button>
-        </div>
-      </div>
+    <script>
+        const EQUATIONS_PER_PAGE = 60;
+        const RESULT_MAX = 20; 
+        const MIN_OPERAND = 1; // CONSTRAINT: Operands A and B must be >= 1
 
-      <!-- 3) Pages -->
-      <div class="mb-2">
-        <h3 class="text-sm font-semibold text-gray-700 mb-2">3) Pages (60 equations per page):</h3>
-        <div class="flex items-center gap-3">
-          <input
-            type="number"
-            id="page-count"
-            value="1"
-            min="1"
-            class="w-20 text-center text-lg py-1 px-2 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-blue-500 bg-white"
-          />
-          <button id="max-pages-btn" class="tap-btn fredoka bg-orange-500 text-white py-2 px-4 rounded-full text-xs hover:bg-orange-600 shadow-md">
-            Calculate Max
-          </button>
-        </div>
-        <p class="text-xs text-gray-600 mt-2">
-          Max combinations:
-          <span id="max-combinations" class="font-bold text-gray-800"></span>
-        </p>
-      </div>
+        // UI elements
+        const generateBtn = document.getElementById('generate-btn');
+        const downloadPdfBtn = document.getElementById('download-pdf-btn');
+        const mathPreview = document.getElementById('math-preview');
+        const maxPagesBtn = document.getElementById('max-pages-btn');
+        const rangeButtons = document.getElementById('range-buttons');
+        const operationButtons = document.getElementById('operation-buttons');
+        const maxCombinationsEl = document.getElementById('max-combinations');
 
-      <!-- Actions -->
-      <div class="flex gap-2 mt-4">
-        <button id="generate-btn" class="tap-btn flex-1 bg-blue-500 text-white py-3 px-4 rounded-full text-lg fredoka hover:bg-blue-600 shadow-lg">
-          Generate
-        </button>
-        <button id="download-pdf-btn" class="tap-btn flex-1 bg-green-500 text-white py-3 px-4 rounded-full text-lg fredoka hover:bg-green-600 shadow-lg hidden">
-          PDF
-        </button>
-      </div>
-    </div>
-
-    <!-- Preview card -->
-    <div class="bg-white/70 backdrop-blur-sm rounded-2xl shadow-xl p-3 mt-3 flex flex-col">
-      <div class="flex items-center justify-between mb-2">
-        <h3 class="text-sm font-semibold text-gray-700">Preview (First Page)</h3>
-        <span id="preview-meta" class="text-xs text-gray-500"></span>
-      </div>
-
-      <div class="scrollable-list overflow-auto rounded-xl border border-black/10">
-        <div id="math-preview" class="page-preview">
-          <div class="h-full w-full flex items-center justify-center text-center text-gray-500 text-sm">
-            Click <span class="fredoka mx-1">Generate</span> to preview.
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <script>
-    const EQUATIONS_PER_PAGE = 60;
-    const RESULT_MAX = 20;
-    const MIN_OPERAND = 1;
-
-    // UI
-    const generateBtn = document.getElementById('generate-btn');
-    const downloadPdfBtn = document.getElementById('download-pdf-btn');
-    const mathPreview = document.getElementById('math-preview');
-    const maxPagesBtn = document.getElementById('max-pages-btn');
-    const rangeButtons = document.getElementById('range-buttons');
-    const operationButtons = document.getElementById('operation-buttons');
-    const maxCombinationsEl = document.getElementById('max-combinations');
-    const previewMetaEl = document.getElementById('preview-meta');
-
-    function getRandomInt(min, max) {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
-
-    function getRangeLimits(rangeString) {
-      const [min, max] = rangeString.split('-').map(Number);
-      return { minRange: min, maxRange: max };
-    }
-
-    // --- Core Logic ---
-    function generateProblem(opType, minVal, maxVal) {
-      let num1, num2, operator, result;
-      let attempts = 0;
-      const minRand = Math.max(MIN_OPERAND, minVal);
-
-      while (attempts < 100) {
-        if (opType === '+') {
-          operator = '+';
-          const maxA = Math.min(maxVal, RESULT_MAX - MIN_OPERAND);
-          if (maxA < minRand) return "Error (Range too constrained for addition)";
-
-          num1 = getRandomInt(minRand, maxA);
-          const maxB = Math.min(maxVal, RESULT_MAX - num1);
-          num2 = getRandomInt(minRand, maxB);
-          result = num1 + num2;
-        } else if (opType === '-') {
-          operator = '-';
-          const a = getRandomInt(minRand, maxVal);
-          const b = getRandomInt(minRand, a);
-          num1 = a; num2 = b;
-          result = num1 - num2;
-        } else {
-          return null;
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
-        if (
-          num1 <= maxVal && num2 <= maxVal &&
-          num1 >= minVal && num2 >= minVal &&
-          result <= RESULT_MAX &&
-          num1 >= MIN_OPERAND && num2 >= MIN_OPERAND
-        ) {
-          return `${num1} ${operator} ${num2}`;
+        function getRangeLimits(rangeString) {
+            const [min, max] = rangeString.split('-').map(Number);
+            return { 
+                minRange: min, 
+                maxRange: max,
+            };
         }
-        attempts++;
-      }
-      return "Error (Failed to generate)";
-    }
 
-    function generateEquations(rangeString, operationCode, numPages) {
-      const { minRange, maxRange } = getRangeLimits(rangeString);
-      const totalEquations = numPages * EQUATIONS_PER_PAGE;
-      const problems = [];
-      const opTypes = [];
-      if (operationCode.includes('+')) opTypes.push('+');
-      if (operationCode.includes('-')) opTypes.push('-');
-      if (opTypes.length === 0) return [];
+        // --- Core Logic for Problem Generation ---
+        function generateProblem(opType, minVal, maxVal) {
+            let num1, num2, operator;
+            let result;
+            let attempts = 0;
+            
+            // The actual minimum value for random generation must be at least the range's min and also at least 1.
+            const minRand = Math.max(MIN_OPERAND, minVal);
 
-      for (let i = 0; i < totalEquations; i++) {
-        const op = opTypes[getRandomInt(0, opTypes.length - 1)];
-        problems.push(generateProblem(op, minRange, maxRange));
-      }
-      return problems;
-    }
+            while (attempts < 100) { 
+                if (opType === '+') {
+                    operator = '+';
+                    
+                    // num1 max: must be within the maxVal range AND leave room for at least MIN_OPERAND (1) to reach RESULT_MAX
+                    const maxA = Math.min(maxVal, RESULT_MAX - MIN_OPERAND); 
+                    if (maxA < minRand) return "Error (Range too constrained for addition)";
 
-    // --- PDF ---
-    function createPDF(allEquations, numPages, rangeString) {
-      const { minRange, maxRange } = getRangeLimits(rangeString);
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+                    num1 = getRandomInt(minRand, maxA);
+                    
+                    // num2 max: must be within the maxVal range AND ensure result <= RESULT_MAX
+                    const maxB = Math.min(maxVal, RESULT_MAX - num1);
+                    num2 = getRandomInt(minRand, maxB);
+                    
+                    result = num1 + num2;
+                } else if (opType === '-') {
+                    operator = '-';
+                    
+                    // A and B must be in [minRand, maxVal] and A >= B.
+                    let a = getRandomInt(minRand, maxVal);
+                    let b = getRandomInt(minRand, a); 
+                    num1 = a; 
+                    num2 = b; 
+                    result = num1 - num2;
+                } else {
+                    return null;
+                }
+                
+                // Final check (ensure both operands are within the range limits)
+                if (num1 <= maxVal && num2 <= maxVal && num1 >= minVal && num2 >= minVal && result <= RESULT_MAX && num1 >= MIN_OPERAND && num2 >= MIN_OPERAND) {
+                    return `${num1} ${operator} ${num2}`;
+                }
+                attempts++;
+            }
+            return "Error (Failed to generate)"; 
+        }
 
-      const margin = 36;
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const columnCount = 6, rowCount = 10;
-      const ANSWER_LINE_LENGTH = 35;
-      const TEXT_BASELINE_OFFSET = 4;
+        function generateEquations(rangeString, operationCode, numPages) {
+            const { minRange, maxRange } = getRangeLimits(rangeString);
+            const totalEquations = numPages * EQUATIONS_PER_PAGE;
+            const problems = [];
+            const opTypes = [];
+            
+            if (operationCode.includes('+')) opTypes.push('+');
+            if (operationCode.includes('-')) opTypes.push('-');
+            
+            if (opTypes.length === 0) return [];
 
-      const contentWidth = pageWidth - 2 * margin;
-      const equationWidth = contentWidth / columnCount;
+            for (let i = 0; i < totalEquations; i++) {
+                const op = opTypes[getRandomInt(0, opTypes.length - 1)];
+                const problem = generateProblem(op, minRange, maxRange);
+                problems.push(problem);
+            }
+            return problems;
+        }
 
-      const startY = margin + 30;
-      const contentHeight = pageHeight - startY - margin - 20;
-      const equationHeight = contentHeight / rowCount;
+        // --- PDF Generation (Cleaned Title) ---
+        function createPDF(allEquations, numPages, rangeString) {
+            const { minRange, maxRange } = getRangeLimits(rangeString);
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+            
+            const margin = 36; 
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const columnCount = 6;
+            const rowCount = 10; 
+            const ANSWER_LINE_LENGTH = 35; 
+            const TEXT_BASELINE_OFFSET = 4;
 
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(0, 0, 0);
+            const contentWidth = pageWidth - 2 * margin;
+            const equationWidth = contentWidth / columnCount; 
+            
+            const startY = margin + 30; 
+            const contentHeight = pageHeight - startY - margin - 20;
+            const equationHeight = contentHeight / rowCount; 
 
-      for (let pageNum = 0; pageNum < numPages; pageNum++) {
-        if (pageNum > 0) doc.addPage();
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(0, 0, 0); 
 
-        const pageEquations = allEquations.slice(
-          pageNum * EQUATIONS_PER_PAGE,
-          (pageNum + 1) * EQUATIONS_PER_PAGE
-        );
+            for (let pageNum = 0; pageNum < numPages; pageNum++) {
+                if (pageNum > 0) {
+                    doc.addPage();
+                }
 
-        doc.setFontSize(18);
-        doc.text(`Math Worksheet: Range ${minRange}-${maxRange}`, pageWidth / 2, margin + 10, { align: 'center' });
-        doc.line(margin, margin + 15, pageWidth - margin, margin + 15);
+                const pageEquations = allEquations.slice(
+                    pageNum * EQUATIONS_PER_PAGE, 
+                    (pageNum + 1) * EQUATIONS_PER_PAGE
+                );
 
-        doc.setFontSize(12);
+                // Page Title - Cleaned header
+                doc.setFontSize(18);
+                doc.text(`Math Worksheet: Range ${minRange}-${maxRange}`, pageWidth / 2, margin + 10, { align: 'center' });
+                doc.line(margin, margin + 15, pageWidth - margin, margin + 15);
 
-        pageEquations.forEach((eq, index) => {
-          const col = index % columnCount;
-          const row = Math.floor(index / columnCount);
+                doc.setFontSize(12);
+                
+                pageEquations.forEach((eq, index) => {
+                    const col = index % columnCount;
+                    const row = Math.floor(index / columnCount);
 
-          const x = margin + (col * equationWidth);
-          const y = startY + (row * equationHeight);
+                    const x = margin + (col * equationWidth); 
+                    const y = startY + (row * equationHeight);
+                    
+                    const eqText = `${eq} =`;
 
-          const eqText = `${eq} =`;
-          doc.text(eqText, x, y, { align: 'left' });
+                    // 1. Draw the Equation 
+                    doc.text(eqText, x, y, { align: 'left' });
+                    
+                    // 2. Draw the Answer Line 
+                    const lineY = y + TEXT_BASELINE_OFFSET; 
+                    const lineStartX = x + doc.getTextWidth(eqText) + 5; 
+                    const lineEndX = lineStartX + ANSWER_LINE_LENGTH; 
+                    
+                    doc.line(lineStartX, lineY, lineEndX, lineY); 
+                });
+                
+                // Page Number
+                doc.setFontSize(10);
+                doc.text(`Page ${pageNum + 1} of ${numPages}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
+            }
 
-          const lineY = y + TEXT_BASELINE_OFFSET;
-          const lineStartX = x + doc.getTextWidth(eqText) + 5;
-          const lineEndX = lineStartX + ANSWER_LINE_LENGTH;
-          doc.line(lineStartX, lineY, lineEndX, lineY);
+            doc.save(`math_worksheet_${minRange}-${maxRange}.pdf`);
+        }
+        
+        // --- Max Combinations Logic (Fixed for $A \ge 1, B \ge 1$) ---
+        function calculateMaxCombinations(rangeString, operationCode) {
+            let totalCombinations = 0;
+            const { minRange, maxRange } = getRangeLimits(rangeString);
+            
+            // The actual minimum value for calculation is max(range_min, 1)
+            const minCalc = Math.max(MIN_OPERAND, minRange);
+
+            if (operationCode.includes('+')) {
+                // Addition: A + B <= 20, A, B in [minCalc, maxRange]
+                for (let a = minCalc; a <= maxRange; a++) {
+                    for (let b = minCalc; b <= maxRange; b++) {
+                        if (a + b <= RESULT_MAX) {
+                            totalCombinations++;
+                        }
+                    }
+                }
+            }
+
+            if (operationCode.includes('-')) {
+                // Subtraction: A >= B, A, B in [minCalc, maxRange]
+                for (let a = minCalc; a <= maxRange; a++) {
+                    for (let b = minCalc; b <= maxRange; b++) {
+                        if (a >= b) {
+                            totalCombinations++; 
+                        }
+                    }
+                }
+            }
+
+            return totalCombinations;
+        }
+
+        // --- UI & Event Handling ---
+        function updateSelection(containerId, selectedElement) {
+            document.getElementById(containerId).querySelectorAll('.option-btn').forEach(btn => {
+                btn.classList.remove('selected-btn');
+            });
+            selectedElement.classList.add('selected-btn');
+        }
+
+        rangeButtons.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                updateSelection('range-buttons', e.target);
+                maxPagesBtn.click();
+            }
         });
 
-        doc.setFontSize(10);
-        doc.text(`Page ${pageNum + 1} of ${numPages}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
-      }
+        operationButtons.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                updateSelection('operation-buttons', e.target);
+                maxPagesBtn.click();
+            }
+        });
 
-      doc.save(`math_worksheet_${minRange}-${maxRange}.pdf`);
-    }
+        function getConfig() {
+            const rangeBtn = document.querySelector('#range-buttons .selected-btn');
+            const opBtn = document.querySelector('#operation-buttons .selected-btn');
 
-    // --- Max combinations ---
-    function calculateMaxCombinations(rangeString, operationCode) {
-      let totalCombinations = 0;
-      const { minRange, maxRange } = getRangeLimits(rangeString);
-      const minCalc = Math.max(MIN_OPERAND, minRange);
+            const rangeString = rangeBtn ? rangeBtn.dataset.range : '1-10';
+            const operationCode = opBtn ? opBtn.dataset.op : '+';
+            const numPages = parseInt(document.getElementById('page-count').value) || 1;
 
-      if (operationCode.includes('+')) {
-        for (let a = minCalc; a <= maxRange; a++) {
-          for (let b = minCalc; b <= maxRange; b++) {
-            if (a + b <= RESULT_MAX) totalCombinations++;
-          }
+            return { rangeString, operationCode, numPages };
         }
-      }
-      if (operationCode.includes('-')) {
-        for (let a = minCalc; a <= maxRange; a++) {
-          for (let b = minCalc; b <= maxRange; b++) {
-            if (a >= b) totalCombinations++;
-          }
-        }
-      }
-      return totalCombinations;
-    }
 
-    // --- UI helpers ---
-    function updateSelection(containerEl, selectedBtn) {
-      containerEl.querySelectorAll('button').forEach(btn => btn.classList.remove('selected-btn'));
-      selectedBtn.classList.add('selected-btn');
-    }
+        maxPagesBtn.addEventListener('click', () => {
+            const { rangeString, operationCode } = getConfig();
 
-    function getConfig() {
-      const rangeBtn = document.querySelector('#range-buttons .selected-btn');
-      const opBtn = document.querySelector('#operation-buttons .selected-btn');
-      const rangeString = rangeBtn ? rangeBtn.dataset.range : '1-10';
-      const operationCode = opBtn ? opBtn.dataset.op : '+';
-      const numPages = parseInt(document.getElementById('page-count').value) || 1;
-      return { rangeString, operationCode, numPages };
-    }
+            const totalCombinations = calculateMaxCombinations(rangeString, operationCode);
+            const maxPages = Math.ceil(totalCombinations / EQUATIONS_PER_PAGE);
+            
+            maxCombinationsEl.textContent = 
+                `${totalCombinations.toLocaleString()} equations / ${maxPages} pages`;
+            document.getElementById('page-count').value = Math.max(1, maxPages);
+        });
+        
+        generateBtn.addEventListener('click', () => {
+            const { rangeString, operationCode, numPages } = getConfig();
+            
+            const allEquations = generateEquations(rangeString, operationCode, numPages);
+            const { minRange, maxRange } = getRangeLimits(rangeString);
+            
+            // 3. Update Preview
+            mathPreview.innerHTML = '';
+            
+            const header = document.createElement('div');
+            header.className = 'text-center text-lg font-bold fredoka mb-4';
+            header.textContent = `Worksheet: Range ${minRange}-${maxRange}`; // Cleaned header
+            mathPreview.appendChild(header);
 
-    rangeButtons.addEventListener('click', (e) => {
-      if (e.target.tagName === 'BUTTON') {
-        updateSelection(rangeButtons, e.target);
-        maxPagesBtn.click();
-      }
-    });
+            const equationGrid = document.createElement('div');
+            equationGrid.className = 'equation-grid';
 
-    operationButtons.addEventListener('click', (e) => {
-      if (e.target.tagName === 'BUTTON') {
-        updateSelection(operationButtons, e.target);
-        maxPagesBtn.click();
-      }
-    });
+            allEquations.slice(0, EQUATIONS_PER_PAGE).forEach(eq => {
+                const div = document.createElement('div');
+                div.className = 'equation';
+                div.textContent = `${eq} = _________`; 
+                equationGrid.appendChild(div);
+            });
 
-    maxPagesBtn.addEventListener('click', () => {
-      const { rangeString, operationCode } = getConfig();
-      const totalCombinations = calculateMaxCombinations(rangeString, operationCode);
-      const maxPages = Math.ceil(totalCombinations / EQUATIONS_PER_PAGE);
+            mathPreview.appendChild(equationGrid);
 
-      maxCombinationsEl.textContent = `${totalCombinations.toLocaleString()} equations / ${maxPages} pages`;
-      document.getElementById('page-count').value = Math.max(1, maxPages);
-    });
+            const footer = document.createElement('p');
+            footer.className = 'page-number';
+            footer.textContent = `Page 1 of ${numPages}`;
+            mathPreview.appendChild(footer);
 
-    generateBtn.addEventListener('click', () => {
-      const { rangeString, operationCode, numPages } = getConfig();
-      const allEquations = generateEquations(rangeString, operationCode, numPages);
-      const { minRange, maxRange } = getRangeLimits(rangeString);
+            downloadPdfBtn.classList.remove('hidden');
 
-      previewMetaEl.textContent = `${minRange}-${maxRange} • ${numPages} page(s)`;
+            // 4. Set up Download Button with generated data
+            downloadPdfBtn.onclick = () => createPDF(allEquations, numPages, rangeString);
+        });
+        
+        // Initial Calculation on Load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Trigger calculation for the default selection (1-10, Addition)
+            maxPagesBtn.click();
+        });
 
-      // Preview
-      mathPreview.innerHTML = '';
-
-      const header = document.createElement('div');
-      header.className = 'text-center text-base font-bold fredoka mb-2';
-      header.textContent = `Worksheet: Range ${minRange}-${maxRange}`;
-      mathPreview.appendChild(header);
-
-      const equationGrid = document.createElement('div');
-      equationGrid.className = 'equation-grid';
-
-      allEquations.slice(0, EQUATIONS_PER_PAGE).forEach(eq => {
-        const div = document.createElement('div');
-        div.className = 'equation';
-        div.textContent = `${eq} = _________`;
-        equationGrid.appendChild(div);
-      });
-
-      mathPreview.appendChild(equationGrid);
-
-      const footer = document.createElement('div');
-      footer.className = 'page-number';
-      footer.textContent = `Page 1 of ${numPages}`;
-      mathPreview.appendChild(footer);
-
-      downloadPdfBtn.classList.remove('hidden');
-      downloadPdfBtn.onclick = () => createPDF(allEquations, numPages, rangeString);
-    });
-
-    document.addEventListener('DOMContentLoaded', () => {
-      maxPagesBtn.click();
-    });
-  </script>
+    </script>
 </body>
 </html>
