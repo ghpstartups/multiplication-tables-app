@@ -68,7 +68,7 @@
         /* Responsive Iframe Container */
         .iframe-container {
             width: 100%;
-            height: 75vh; /* Takes up 75% of viewport height */
+            height: 80vh; 
             background-color: #525659;
             border-radius: 8px;
             overflow: hidden;
@@ -139,7 +139,10 @@
 
 
     <script>
-        const EQUATIONS_PER_PAGE = 60;
+        // INCREASED DENSITY: 15 rows * 6 cols = 90 equations per page
+        const ROWS_PER_PAGE = 15;
+        const COLS_PER_PAGE = 6;
+        const EQUATIONS_PER_PAGE = ROWS_PER_PAGE * COLS_PER_PAGE;
         
         // UI Elements
         const generateBtn = document.getElementById('generate-btn');
@@ -153,7 +156,6 @@
         let lastFileName = "worksheet.pdf";
         let currentEquations = [];
 
-        // Fisher-Yates Shuffle Algorithm to randomize the order
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -162,23 +164,19 @@
             return array;
         }
 
-        // --- Core Logic: Generate ALL Valid Combinations ---
         function generateUniverse(mode, opCode) {
             let equations = [];
             const addProblems = [];
             const subProblems = [];
 
-            // 1. Generate ADDITION problems
             if (opCode.includes('+')) {
                 if (mode === 'operands-10') {
-                    // 1..10 + 1..10
                     for (let a = 1; a <= 10; a++) {
                         for (let b = 1; b <= 10; b++) {
                             addProblems.push(`${a} + ${b}`);
                         }
                     }
                 } else {
-                    // Sums up to 20 (A + B <= 20)
                     for (let a = 1; a <= 19; a++) {
                         for (let b = 1; b <= 19; b++) {
                             if (a + b <= 20) {
@@ -189,12 +187,10 @@
                 }
             }
 
-            // 2. Generate SUBTRACTION problems
             if (opCode.includes('-')) {
                 if (mode === 'operands-10') {
-                    // Inverse of "Operands 1-10". 
-                    for (let a = 2; a <= 20; a++) { // Minuend
-                        for (let b = 1; b < a; b++) { // Subtrahend
+                    for (let a = 2; a <= 20; a++) { 
+                        for (let b = 1; b < a; b++) { 
                             let result = a - b;
                             if (b <= 10 && result <= 10) {
                                 subProblems.push(`${a} - ${b}`);
@@ -202,7 +198,6 @@
                         }
                     }
                 } else {
-                    // Sums up to 20 (Inverse) -> Minuend up to 20.
                     for (let a = 2; a <= 20; a++) {
                         for (let b = 1; b < a; b++) {
                             subProblems.push(`${a} - ${b}`);
@@ -211,12 +206,10 @@
                 }
             }
 
-            // Combine and Shuffle
             equations = [...addProblems, ...subProblems];
             return shuffleArray(equations);
         }
 
-        // --- Logic: Main Controller ---
         function updateApp() {
             const rangeBtn = document.querySelector('#range-buttons .selected-btn');
             const opBtn = document.querySelector('#operation-buttons .selected-btn');
@@ -224,37 +217,34 @@
             const mode = rangeBtn.dataset.mode;
             const opCode = opBtn.dataset.op;
 
-            // 1. Generate All Equations
             currentEquations = generateUniverse(mode, opCode);
             
-            // 2. Calculate Stats
             const totalEq = currentEquations.length;
             const totalPages = Math.ceil(totalEq / EQUATIONS_PER_PAGE);
 
-            // 3. Update Text
             statsDisplay.innerHTML = `${totalEq} Equations <span class="text-gray-400 mx-2">|</span> ${totalPages} Pages`;
 
-            // 4. Generate PDF
             generatePDFBlob(currentEquations, totalPages, mode);
         }
 
-        // --- Logic: PDF Creation ---
         function generatePDFBlob(allEquations, numPages, mode) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF({ unit: 'pt', format: 'a4' });
             
-            const margin = 40; 
+            // Tighter Margins to allow more space for columns
+            const margin = 30; 
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
             
-            const columnCount = 6;
-            const rowCount = 10;
-            const contentWidth = pageWidth - 2 * margin;
-            const startY = margin + 40; 
-            const contentHeight = pageHeight - startY - margin - 20;
+            // Layout Calculation
+            const contentWidth = pageWidth - (2 * margin);
+            const startY = margin + 50; 
             
-            const equationWidth = contentWidth / columnCount; 
-            const equationHeight = contentHeight / rowCount; 
+            // Dynamic Grid Height logic (make it tight)
+            const rowHeight = 42; // Standard single spacing height approx
+            const gridHeight = ROWS_PER_PAGE * rowHeight;
+            
+            const columnWidth = contentWidth / COLS_PER_PAGE; 
 
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(0, 0, 0); 
@@ -264,60 +254,64 @@
             for (let pageNum = 0; pageNum < numPages; pageNum++) {
                 if (pageNum > 0) doc.addPage();
 
-                // Header
+                // HEADER
                 doc.setFontSize(18);
                 doc.setFont('helvetica', 'bold');
-                doc.text(`Math Worksheet`, pageWidth / 2, margin + 15, { align: 'center' });
+                doc.text(`Math Worksheet`, pageWidth / 2, margin + 20, { align: 'center' });
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'normal');
-                doc.text(`Difficulty: ${titleText}`, pageWidth / 2, margin + 30, { align: 'center' });
+                doc.text(`Difficulty: ${titleText}`, pageWidth / 2, margin + 35, { align: 'center' });
                 
+                // Top Border
                 doc.setLineWidth(1);
                 doc.line(margin, startY, pageWidth - margin, startY);
 
-                // Get equations for this page
+                // EQUATIONS
                 const startIndex = pageNum * EQUATIONS_PER_PAGE;
                 const pageEquations = allEquations.slice(startIndex, startIndex + EQUATIONS_PER_PAGE);
 
-                doc.setFontSize(12);
+                // Use slightly smaller font to ensure fit
+                doc.setFontSize(11);
                 
-                // Render Equations
                 pageEquations.forEach((eq, index) => {
-                    const col = index % columnCount;
-                    const row = Math.floor(index / columnCount);
+                    const col = index % COLS_PER_PAGE;
+                    const row = Math.floor(index / COLS_PER_PAGE);
 
-                    const x = margin + (col * equationWidth) + 12; 
-                    const y = startY + (row * equationHeight) + (equationHeight/1.6);
+                    // X Calculation:
+                    // Margin + (Column Index * Width) + Left Padding (8pt)
+                    const x = margin + (col * columnWidth) + 8; 
+                    
+                    // Y Calculation: Center vertically in the row
+                    const y = startY + (row * rowHeight) + (rowHeight / 1.6); 
                     
                     const text = `${eq} =`;
                     doc.text(text, x, y);
                     
-                    // Answer Line - STANDARD LENGTH FIXED
+                    // Line Logic (Fixed length)
                     const textWidth = doc.getTextWidth(text);
-                    const lineStart = x + textWidth + 5;
-                    // Standard length for approx "____" (32pt)
-                    const FIXED_LINE_LENGTH = 32; 
+                    const lineStart = x + textWidth + 3;
+                    const FIXED_LINE_LENGTH = 28; // Fits safely in column
                     const lineEnd = lineStart + FIXED_LINE_LENGTH;
                     
                     doc.setLineWidth(0.5);
                     doc.line(lineStart, y, lineEnd, y);
                 });
 
-                // Vertical Separator Lines
+                // VERTICAL DIVIDERS
                 doc.setLineWidth(0.5);
-                const totalGridHeight = rowCount * equationHeight;
-                for(let c = 1; c < columnCount; c++) {
-                    const lineX = margin + (c * equationWidth);
-                    doc.line(lineX, startY, lineX, startY + totalGridHeight);
+                // Draw lines at exact column boundaries
+                for(let c = 1; c < COLS_PER_PAGE; c++) {
+                    const lineX = margin + (c * columnWidth);
+                    doc.line(lineX, startY, lineX, startY + gridHeight);
                 }
 
-                // Bottom Border
+                // BOTTOM BORDER
                 doc.setLineWidth(1);
-                doc.line(margin, startY + totalGridHeight, pageWidth - margin, startY + totalGridHeight);
+                doc.line(margin, startY + gridHeight, pageWidth - margin, startY + gridHeight);
 
-                // Footer
+                // FOOTER
                 doc.setFontSize(9);
-                doc.text(`Page ${pageNum + 1} of ${numPages}`, pageWidth / 2, pageHeight - 20, { align: 'center' });
+                doc.text(`Page ${pageNum + 1} of ${numPages}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
             }
 
             lastGeneratedPDF = doc.output('bloburl');
@@ -331,7 +325,7 @@
         function updateSelection(containerId, selectedElement) {
             document.getElementById(containerId).querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected-btn'));
             selectedElement.classList.add('selected-btn');
-            updateApp(); // Auto trigger
+            updateApp();
         }
 
         rangeButtons.addEventListener('click', (e) => {
@@ -344,7 +338,7 @@
             if (btn) updateSelection('operation-buttons', btn);
         });
 
-        generateBtn.addEventListener('click', updateApp); // Reshuffle
+        generateBtn.addEventListener('click', updateApp); 
 
         downloadBtn.addEventListener('click', () => {
             if (lastGeneratedPDF) {
@@ -357,7 +351,6 @@
             }
         });
 
-        // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             updateApp();
         });
