@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Time Mastery</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', sans-serif; touch-action: manipulation; overflow: hidden; position: fixed; width: 100%; height: 100%; margin: 0; padding-top: 1rem; }
+    .fredoka { font-family: 'Fredoka One', cursive; font-variant-numeric: tabular-nums; }
+    
+    /* Card Flip Logic */
+    .card { transform-style: preserve-3d; transition: transform 0.6s, opacity 0.3s ease; }
+    .card.is-flipped { transform: rotateY(180deg); }
+    .card-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .card-face-back { transform: rotateY(180deg); }
+
+    /* UI Animations */
+    .keypad-btn, .preset-btn { transition: transform 0.1s ease, background-color 0.2s ease, border-color 0.2s ease; }
+    .keypad-btn:active, .preset-btn:active { transform: scale(0.95); }
+    .modal-enter { animation: modal-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    @keyframes modal-in { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+
+    /* Progress Dots */
+    .problem-dot { 
+        width: 20px; height: 20px; border-radius: 50%; margin: 2px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: all 0.3s ease;
+    }
+    .dot-pending { background-color: #cbd5e1; }
+    .dot-correct { background-color: #22c55e; box-shadow: 0 0 5px #22c55e; }
+    .dot-wrong { background-color: #ef4444; }
+    .dot-current { border: 2px solid #3b82f6; background-color: white; transform: scale(1.2); }
+
+    /* Animations */
+    .is-paused-glow { animation: pulse-yellow-green 2s infinite ease-in-out; }
+    @keyframes pulse-yellow-green {
+      0%, 100% { background-color: #ca8a04; box-shadow: 0 0 12px rgba(202, 138, 4, 0.7); transform: scale(1.0); }
+      50% { background-color: #16a34a; box-shadow: 0 0 15px rgba(22, 163, 74, 0.8); transform: scale(1.05); }
+    }
+
+    .particle { position: fixed; border-radius: 50%; animation: explode 1s ease-out forwards; z-index: 100; }
+    @keyframes explode { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: var(--transform-to); } }
+    .tag-particle { position: fixed; border-radius: 50%; animation: tag-explode .6s ease-out forwards; z-index: 100; }
+    @keyframes tag-explode { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: var(--transform-to); } }
+
+    .scrollable-list { -webkit-overflow-scrolling: touch; }
+    
+    /* Layout */
+    @media (orientation: landscape) and (max-height: 500px) {
+      #setup-modal, #game-container, #win-modal, #practice-modal { display: none !important; }
+      #orientation-lock { display: flex; }
+    }
+    
+    #game-container { max-width: 400px; width: 100%; padding: 0 5px; height: 100%; }
+    .card-container { perspective: 1000px; flex-grow: 1; margin-bottom: 10px; min-height: 0; }
+    .card-face { padding: 4px; display: flex; flex-direction: column; }
+    
+    /* Input Styling */
+    .time-input {
+        height: 45px; width: 60px; font-size: 1.8rem; border: 2px solid #cbd5e1; border-radius: .5rem;
+        display: flex; align-items: center; justify-content: center; background: #f1f5f9;
+        transition: border-color 0.2s;
+    }
+    .time-input.active-input { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+    .colon-separator { font-size: 2rem; font-weight: bold; color: #334155; margin: 0 5px; }
+
+    #keypad { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; height: 100%; }
+    .keypad-btn { font-size: 1.6rem; padding: 10px 0; border-radius: 12px; }
+    .preset-btn-selected { background: #22c55e !important; color:#fff !important; border-color:#16a34a !important; }
+
+    /* Timer Bar */
+    .timer-bar-container { position: absolute; top: 0; left: 0; width: 100%; height: 6px; overflow: hidden; border-top-left-radius: 1rem; border-top-right-radius: 1rem; background: #eee; }
+    .timer-bar { height: 100%; background-color: #ef4444; width: 100%; transform-origin: left; }
+  </style>
+</head>
+<body class="bg-indigo-100 flex flex-col items-center justify-start p-1">
+  
+  <div id="orientation-lock" class="hidden fixed inset-0 bg-indigo-100 z-50 flex-col items-center justify-center text-center p-4">
+    <svg class="w-16 h-16 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" /></svg>
+    <h2 class="text-2xl fredoka text-indigo-800 mt-4">Please rotate your device</h2>
+    <p class="text-indigo-600 mt-2">This game is best played in portrait mode.</p>
+  </div>
+
+  <div id="setup-modal" class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-6 text-center max-w-sm w-full z-20 mt-10">
+    
+    <div id="mode-step" class="modal-enter">
+      <h2 class="text-3xl fredoka text-indigo-800 mb-2">Time Mastery</h2>
+      <p class="text-gray-500 mb-4">Choose your game mode</p>
+      <div class="flex flex-col gap-3 my-4">
+        <button id="mode-read" class="preset-btn py-4 px-4 rounded-xl border-2 border-indigo-200 bg-indigo-50 text-lg font-bold text-indigo-800 shadow-sm">
+            ⏰ Read the Clock
+            <span class="block text-xs font-normal text-gray-500 mt-1">Type the Hour and Minute</span>
+        </button>
+        <button id="mode-easy" class="preset-btn py-4 px-4 rounded-xl border-2 border-indigo-200 bg-indigo-50 text-lg font-bold text-indigo-800 shadow-sm">
+            ➕ Easy Math
+            <span class="block text-xs font-normal text-gray-500 mt-1">Difference within same hour</span>
+        </button>
+        <button id="mode-hard" class="preset-btn py-4 px-4 rounded-xl border-2 border-indigo-200 bg-indigo-50 text-lg font-bold text-indigo-800 shadow-sm">
+            🧠 Hard Math
+            <span class="block text-xs font-normal text-gray-500 mt-1">Difference across hours</span>
+        </button>
+      </div>
+    </div>
+    
+    <div id="settings-step" class="hidden modal-enter">
+      <h2 class="text-2xl fredoka text-indigo-800">Settings</h2>
+      
+      <div class="my-4 bg-gray-50 p-3 rounded-xl border border-gray-200">
+          <p class="text-gray-700 font-bold mb-2">Sound Effects</p>
+          <div class="flex justify-center gap-2">
+            <button id="sound-on-btn" class="flex-1 py-2 rounded-lg border-2 border-gray-300 bg-white">On 🔊</button>
+            <button id="sound-off-btn" class="flex-1 py-2 rounded-lg border-2 border-gray-300 bg-white">Off 🔇</button>
+          </div>
+      </div>
+      
+      <div class="my-4 bg-gray-50 p-3 rounded-xl border border-gray-200">
+        <p class="text-gray-700 font-bold mb-2">Timer per Question</p>
+        <div class="flex justify-center gap-2 mb-2">
+          <button id="timer-yes-btn" class="flex-1 py-2 rounded-lg border-2 border-gray-300 bg-white">Yes</button>
+          <button id="timer-no-btn" class="flex-1 py-2 rounded-lg border-2 border-gray-300 bg-white">No</button>
+        </div>
+        <div id="timer-input-container" class="hidden items-center justify-center gap-2 mt-2">
+           <input type="number" id="seconds-input" value="15" min="5" max="60" class="w-16 text-center text-xl border-2 border-gray-300 rounded-lg p-1" />
+           <span class="text-sm text-gray-500">seconds</span>
+        </div>
+      </div>
+
+      <button id="start-game-btn" class="w-full bg-indigo-600 text-white py-3 px-8 rounded-full text-2xl fredoka hover:bg-indigo-700 active:scale-95 transition-transform shadow-lg mt-2">Start Game</button>
+    </div>
+  </div>
+
+  <div id="game-container" class="w-full mx-auto flex flex-col hidden modal-enter h-full">
+    
+    <div class="text-center flex-shrink-0 pt-1 pb-2">
+      <div class="flex items-center justify-between px-2 mb-2">
+         <button id="pause-btn" class="bg-yellow-500 text-white py-1 px-3 rounded-full text-sm font-bold shadow-md">Pause</button>
+         <div class="bg-white px-3 py-1 rounded-full shadow-sm border border-indigo-100">
+            <span id="clock" class="text-xl fredoka text-indigo-600 font-mono">00:00</span>
+         </div>
+         <button id="restart-btn" class="bg-gray-400 text-white py-1 px-3 rounded-full text-sm font-bold shadow-md">Restart</button>
+      </div>
+      
+      <div id="progress-container" class="flex justify-center flex-wrap gap-1 px-4 min-h-[24px]">
+          </div>
+    </div>
+
+    <div class="card-container w-full relative">
+        <div id="card" class="relative w-full h-full card">
+            
+            <div class="absolute w-full h-full card-face bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden border border-gray-200">
+                <div id="timer-bar-container" class="timer-bar-container hidden"><div id="timer-bar" class="timer-bar"></div></div>
+                
+                <div id="visual-area" class="flex-grow flex flex-col items-center justify-center w-full py-2 relative">
+                    </div>
+
+                <div class="flex-none bg-indigo-50 w-full p-3 border-t border-indigo-100">
+                    
+                    <div id="input-row" class="flex justify-center items-center mb-3">
+                        </div>
+
+                    <div id="keypad" class="w-full max-w-sm mx-auto h-48">
+                        </div>
+                </div>
+            </div>
+
+            <div id="card-back-face" class="absolute w-full h-full inset-0 card-face card-face-back bg-indigo-500 rounded-2xl shadow-xl flex flex-col items-center justify-center p-4 text-center border-4 border-white">
+                <div id="result-icon" class="text-6xl mb-4">❌</div>
+                <h2 class="text-white text-3xl fredoka mb-2">Oops!</h2>
+                <div id="result-display" class="text-white text-xl bg-white/20 p-4 rounded-xl backdrop-blur-sm w-full"></div>
+                <p class="text-white/80 text-sm mt-4 animate-pulse">Next question coming up...</p>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <div id="practice-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="modal-enter bg-white rounded-3xl shadow-2xl p-8 text-center max-w-sm w-full relative border-4 border-orange-300">
+      <div id="practice-fireworks-container" class="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl"></div>
+      <div class="text-7xl mb-2">💪</div>
+      <h2 class="text-3xl fredoka text-orange-500">Practice Time!</h2>
+      <p class="text-gray-600 mt-2">Let's fix the <span id="wrong-count-display" class="font-bold text-red-500">0</span> mistakes you made to master this.</p>
+      <button id="start-practice-btn" class="mt-6 w-full bg-orange-500 text-white py-3 rounded-full text-xl fredoka hover:bg-orange-600 shadow-lg transform active:scale-95 transition-all">Start Practice</button>
+    </div>
+  </div>
+
+  <div id="win-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="modal-enter bg-white rounded-3xl shadow-2xl p-8 text-center max-w-sm w-full relative border-4 border-yellow-300">
+      <div id="fireworks-container" class="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl"></div>
+      <div class="text-8xl mb-2">🏆</div>
+      <h2 class="text-4xl fredoka text-yellow-500">You Did It!</h2>
+      <div id="win-message" class="text-gray-700 mt-4 text-lg bg-gray-50 p-4 rounded-xl"></div>
+      <div class="mt-6 flex flex-col gap-3">
+        <button id="win-play-again-btn" class="w-full py-3 rounded-full text-xl fredoka bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg">Play Again</button>
+        <button id="win-start-over-btn" class="w-full py-3 rounded-full text-xl fredoka bg-gray-200 text-gray-700 hover:bg-gray-300">Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- GLOBAL STATE ---
+    const CONFIG = {
+        questionsPerRound: 10,
+        clockRadius: 65,
+        mathClockRadius: 55
+    };
+
+    const STATE = {
+        mode: null, // 'read', 'easy', 'hard'
+        isSoundOn: true,
+        isTimerEnabled: false,
+        timerTotal: 15,
+        timerRemaining: 15,
+        
+        problems: [], // Array of objects {h1, m1, h2, m2, answer}
+        currentProblemIndex: 0,
+        wrongProblems: [], // List of problems to redo
+        
+        inputs: [], // Array of input element references [input1, input2?]
+        focusedInputIndex: 0,
+        
+        isPaused: false,
+        startTime: 0,
+        elapsedPauseTime: 0,
+        clockInterval: null,
+        timerFrame: null,
+        lastFrameTime: 0,
+        
+        attempts: 0
+    };
+
+    // --- DOM ELEMENTS ---
+    const els = {
+        setupModal: document.getElementById('setup-modal'),
+        modeStep: document.getElementById('mode-step'),
+        settingsStep: document.getElementById('settings-step'),
+        gameContainer: document.getElementById('game-container'),
+        winModal: document.getElementById('win-modal'),
+        practiceModal: document.getElementById('practice-modal'),
+        
+        visualArea: document.getElementById('visual-area'),
+        inputRow: document.getElementById('input-row'),
+        keypad: document.getElementById('keypad'),
+        progressContainer: document.getElementById('progress-container'),
+        
+        card: document.getElementById('card'),
+        cardBack: document.getElementById('card-back-face'),
+        resultDisplay: document.getElementById('result-display'),
+        
+        timerBar: document.getElementById('timer-bar'),
+        timerContainer: document.getElementById('timer-bar-container'),
+        gameClock: document.getElementById('clock'),
+        
+        setupError: document.getElementById('setup-error')
+    };
+
+    // --- AUDIO (TONE.JS) ---
+    const audio = {
+        correct: new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } }).toDestination(),
+        incorrect: new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.5 }, volume: -10 }).toDestination(),
+        fanfare: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fatsawtooth' }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.4 } }).toDestination()
+    };
+
+    async function playSound(type) {
+        if (!STATE.isSoundOn) return;
+        if (Tone.context.state !== 'running') await Tone.start();
+        
+        switch(type) {
+            case 'correct':
+                audio.correct.triggerAttackRelease('C5', '8n'); 
+                setTimeout(() => audio.correct.triggerAttackRelease('G5', '8n'), 100);
+                break;
+            case 'incorrect':
+                audio.incorrect.triggerAttackRelease('F#3', '8n');
+                break;
+            case 'fanfare':
+                const now = Tone.now();
+                audio.fanfare.triggerAttackRelease(['C5','E5','G5'], '8n', now);
+                audio.fanfare.triggerAttackRelease(['E5','G5','C6'], '8n', now + 0.2);
+                audio.fanfare.triggerAttackRelease(['G5','C6','E6'], '4n', now + 0.4);
+                break;
+        }
+    }
+
+    // --- CLOCK DRAWING LOGIC ---
+    function drawClock(ctx, radius, h, m, label = null) {
+        const cx = radius + 5;
+        const cy = radius + 15;
+        
+        ctx.clearRect(0,0, ctx.canvas.width, ctx.canvas.height);
+        
+        // Face
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        // Ticks & Numbers
+        ctx.fillStyle = '#333';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `bold ${radius * 0.2}px Inter`;
+        
+        for(let i=1; i<=12; i++) {
+            const angle = (i * 30) * Math.PI / 180;
+            // Numbers
+            const numR = radius * 0.8;
+            ctx.fillText(i, cx + Math.sin(angle)*numR, cy - Math.cos(angle)*numR);
+            
+            // Ticks
+            const tickR = radius * 0.95;
+            ctx.beginPath();
+            ctx.arc(cx + Math.sin(angle)*tickR, cy - Math.cos(angle)*tickR, 2, 0, 2*Math.PI);
+            ctx.fill();
+        }
+
+        // Hands
+        // Min (6 deg per min)
+        const minAngle = (m * 6) * Math.PI / 180;
+        const minLen = radius * 0.75;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.sin(minAngle)*minLen, cy - Math.cos(minAngle)*minLen);
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Hour (30 deg per hour + 0.5 deg per min)
+        const hrAngle = ((h % 12) * 30 + m * 0.5) * Math.PI / 180;
+        const hrLen = radius * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.sin(hrAngle)*hrLen, cy - Math.cos(hrAngle)*hrLen);
+        ctx.strokeStyle = '#4f46e5'; // Indigo color for hour
+        ctx.lineWidth = 5;
+        ctx.stroke();
+        
+        // Center Pin
+        ctx.beginPath();
+        ctx.arc(cx, cy, 4, 0, 2*Math.PI);
+        ctx.fillStyle = '#ef4444';
+        ctx.fill();
+
+        // Optional Label
+        if(label) {
+            ctx.fillStyle = '#6b7280';
+            ctx.font = '12px Inter';
+            ctx.fillText(label, cx, cy + radius + 15);
+        }
+    }
+
+    // --- GAME LOGIC ---
+
+    function generateProblemList(count, mode) {
+        const list = [];
+        for(let i=0; i<count; i++) {
+            let p = {};
+            if (mode === 'read') {
+                p.h1 = Math.floor(Math.random() * 12) + 1;
+                p.m1 = Math.floor(Math.random() * 60);
+                p.ans = [p.h1, p.m1]; // Array for 2 inputs
+            } else if (mode === 'easy') {
+                p.h1 = Math.floor(Math.random() * 12) + 1;
+                p.m1 = Math.floor(Math.random() * 45); // Limit so we can add
+                const diff = Math.floor(Math.random() * (55 - p.m1)) + 5; // at least 5 min diff
+                p.m2 = p.m1 + diff;
+                p.h2 = p.h1;
+                p.ans = [diff];
+            } else if (mode === 'hard') {
+                p.h1 = Math.floor(Math.random() * 12) + 1;
+                p.m1 = Math.floor(Math.random() * 25) + 30; // Start late in hour
+                const diff = Math.floor(Math.random() * 45) + 15; // 15 to 60 mins diff
+                let totalM = p.m1 + diff;
+                p.h2 = p.h1 + Math.floor(totalM / 60);
+                if(p.h2 > 12) p.h2 -= 12;
+                p.m2 = totalM % 60;
+                p.ans = [diff];
+            }
+            list.push(p);
+        }
+        return list;
+    }
+
+    function startGame(isRetry = false) {
+        if (!isRetry) {
+            STATE.problems = generateProblemList(CONFIG.questionsPerRound, STATE.mode);
+            STATE.currentProblemIndex = 0;
+            STATE.wrongProblems = [];
+            STATE.attempts = 0;
+            STATE.startTime = Date.now();
+        } else {
+            // Practice mode: Use the wrong problems
+            STATE.problems = [...STATE.wrongProblems];
+            STATE.wrongProblems = []; // Reset for this practice run
+            STATE.currentProblemIndex = 0;
+        }
+
+        STATE.isPaused = false;
+        STATE.elapsedPauseTime = 0;
+        
+        renderProgressDots();
+        loadProblem();
+        
+        // Start Clock
+        if(STATE.clockInterval) clearInterval(STATE.clockInterval);
+        STATE.clockInterval = setInterval(() => {
+            if(STATE.isPaused) return;
+            const elapsed = Date.now() - STATE.startTime - STATE.elapsedPauseTime;
+            const min = String(Math.floor(elapsed/60000)).padStart(2,'0');
+            const sec = String(Math.floor((elapsed%60000)/1000)).padStart(2,'0');
+            els.gameClock.textContent = `${min}:${sec}`;
+        }, 1000);
+
+        // UI Transitions
+        els.setupModal.classList.add('hidden');
+        els.winModal.classList.add('hidden');
+        els.practiceModal.classList.add('hidden');
+        els.gameContainer.classList.remove('hidden');
+    }
+
+    function loadProblem() {
+        const p = STATE.problems[STATE.currentProblemIndex];
+        
+        // 1. Setup Visual Area
+        els.visualArea.innerHTML = '';
+        
+        if (STATE.mode === 'read') {
+            const cvs = document.createElement('canvas');
+            const r = CONFIG.clockRadius + 20; // Bigger for single view
+            cvs.width = (r * 2) + 10; cvs.height = (r * 2) + 30;
+            els.visualArea.appendChild(cvs);
+            drawClock(cvs.getContext('2d'), r, p.h1, p.m1);
+        } else {
+            // Math modes - Vertical Layout
+            const r = CONFIG.mathClockRadius;
+            const container = document.createElement('div');
+            container.className = "flex flex-col items-center gap-2";
+            
+            // Clock 1
+            const cvs1 = document.createElement('canvas');
+            cvs1.width = (r*2)+10; cvs1.height = (r*2)+30;
+            drawClock(cvs1.getContext('2d'), r, p.h1, p.m1, "Start");
+            
+            // Arrow
+            const arrow = document.createElement('div');
+            arrow.innerHTML = '⬇️'; 
+            arrow.className = "text-2xl animate-bounce";
+
+            // Clock 2
+            const cvs2 = document.createElement('canvas');
+            cvs2.width = (r*2)+10; cvs2.height = (r*2)+30;
+            drawClock(cvs2.getContext('2d'), r, p.h2, p.m2, "End");
+
+            container.appendChild(cvs1);
+            container.appendChild(arrow);
+            container.appendChild(cvs2);
+            els.visualArea.appendChild(container);
+        }
+
+        // 2. Setup Inputs
+        els.inputRow.innerHTML = '';
+        STATE.inputs = [];
+        
+        if (STATE.mode === 'read') {
+            // Hour Input
+            const iH = createInput();
+            els.inputRow.appendChild(iH);
+            STATE.inputs.push(iH);
+            
+            // Colon
+            const sep = document.createElement('span');
+            sep.textContent = ':';
+            sep.className = 'colon-separator';
+            els.inputRow.appendChild(sep);
+            
+            // Min Input
+            const iM = createInput();
+            els.inputRow.appendChild(iM);
+            STATE.inputs.push(iM);
+        } else {
+            // Math - Single Input
+            const iD = createInput();
+            els.inputRow.appendChild(iD);
+            STATE.inputs.push(iD);
+            
+            const label = document.createElement('span');
+            label.textContent = 'mins';
+            label.className = 'text-indigo-600 font-bold ml-2';
+            els.inputRow.appendChild(label);
+        }
+
+        // Focus first input
+        switchFocus(0);
+
+        // 3. Reset Timer
+        if (STATE.isTimerEnabled) startTimer();
+    }
+
+    function createInput() {
+        const div = document.createElement('div');
+        div.className = 'time-input';
+        div.onclick = (e) => {
+            const idx = STATE.inputs.indexOf(e.target);
+            if(idx !== -1) switchFocus(idx);
+        };
+        return div;
+    }
+
+    function switchFocus(idx) {
+        STATE.inputs.forEach(i => i.classList.remove('active-input'));
+        STATE.inputs[idx].classList.add('active-input');
+        STATE.focusedInputIndex = idx;
+    }
+
+    // --- KEYPAD LOGIC ---
+    function initKeypad() {
+        els.keypad.innerHTML = '';
+        const keys = ['1','2','3','4','5','6','7','8','9','⌫','0','✓'];
+        keys.forEach(k => {
+            const btn = document.createElement('button');
+            btn.textContent = k;
+            btn.className = "keypad-btn fredoka bg-white border-b-4 border-indigo-200 text-indigo-600 shadow-sm active:border-b-0 active:translate-y-1";
+            
+            if (k === '✓') {
+                btn.className += " bg-green-500 text-white border-green-700";
+                btn.onclick = checkAnswer;
+            } else if (k === '⌫') {
+                btn.className += " bg-gray-200 text-gray-600 border-gray-400";
+                btn.onclick = () => handleInput('back');
+            } else {
+                btn.onclick = () => handleInput(k);
+            }
+            els.keypad.appendChild(btn);
+        });
+    }
+
+    function handleInput(val) {
+        if(els.card.classList.contains('is-flipped')) return;
+
+        const currentEl = STATE.inputs[STATE.focusedInputIndex];
+        let text = currentEl.textContent;
+
+        if (val === 'back') {
+            text = text.slice(0, -1);
+        } else {
+            if (text.length < 2) text += val;
+            
+            // Auto-advance logic for Read Mode
+            if (text.length === 2 && STATE.mode === 'read' && STATE.focusedInputIndex === 0) {
+                setTimeout(() => switchFocus(1), 100);
+            }
+        }
+        currentEl.textContent = text;
+    }
+
+    // --- CHECK ANSWER ---
+    function checkAnswer() {
+        // Collect User Answers
+        const userVals = STATE.inputs.map(i => parseInt(i.textContent));
+        const p = STATE.problems[STATE.currentProblemIndex];
+        
+        // Validate
+        if (userVals.some(v => isNaN(v))) return; // Incomplete
+
+        let correct = true;
+        if (STATE.mode === 'read') {
+            if (userVals[0] !== p.ans[0] || userVals[1] !== p.ans[1]) correct = false;
+        } else {
+            if (userVals[0] !== p.ans[0]) correct = false;
+        }
+
+        STATE.attempts++;
+        updateDot(STATE.currentProblemIndex, correct);
+
+        if (correct) {
+            playSound('correct');
+            triggerConfetti(els.inputRow);
+            setTimeout(nextQuestion, 1000);
+        } else {
+            playSound('incorrect');
+            STATE.wrongProblems.push(p);
+            
+            // Show result
+            let correctText = "";
+            if(STATE.mode === 'read') {
+                correctText = `${String(p.h1).padStart(2,'0')}:${String(p.m1).padStart(2,'0')}`;
+            } else {
+                correctText = `${p.ans[0]} minutes`;
+            }
+            
+            els.resultDisplay.innerHTML = `Correct Answer:<br><span class="text-3xl font-bold">${correctText}</span>`;
+            els.card.classList.add('is-flipped');
+            
+            setTimeout(() => {
+                els.card.classList.remove('is-flipped');
+                setTimeout(nextQuestion, 300);
+            }, 2500);
+        }
+    }
+
+    function nextQuestion() {
+        STATE.currentProblemIndex++;
+        if (STATE.currentProblemIndex >= STATE.problems.length) {
+            endRound();
+        } else {
+            loadProblem();
+            // Scroll progress
+            const dot = document.getElementById(`dot-${STATE.currentProblemIndex}`);
+            dot.classList.add('dot-current');
+            if(STATE.currentProblemIndex > 0) {
+                 document.getElementById(`dot-${STATE.currentProblemIndex-1}`).classList.remove('dot-current');
+            }
+        }
+    }
+
+    function endRound() {
+        clearInterval(STATE.clockInterval);
+        if(STATE.timerFrame) cancelAnimationFrame(STATE.timerFrame);
+        
+        if (STATE.wrongProblems.length > 0) {
+            // Practice Needed
+            playSound('fanfare'); // Minor fanfare
+            document.getElementById('wrong-count-display').textContent = STATE.wrongProblems.length;
+            els.practiceModal.classList.remove('hidden');
+        } else {
+            // Full Win
+            playSound('fanfare');
+            triggerFireworks();
+            
+            // Calculate Stats
+            const elapsed = Date.now() - STATE.startTime;
+            const timeStr = els.gameClock.textContent;
+            els.winModal.querySelector('#win-message').innerHTML = `
+                <p>Time: <b>${timeStr}</b></p>
+                <p>Accuracy: <b>${Math.round((STATE.problems.length / STATE.attempts)*100)}%</b></p>
+            `;
+            els.winModal.classList.remove('hidden');
+        }
+    }
+
+    // --- TIMER ---
+    function startTimer() {
+        STATE.timerRemaining = STATE.timerTotal;
+        STATE.lastFrameTime = performance.now();
+        els.timerContainer.classList.remove('hidden');
+        if(STATE.timerFrame) cancelAnimationFrame(STATE.timerFrame);
+        STATE.timerFrame = requestAnimationFrame(timerLoop);
+    }
+
+    function timerLoop(now) {
+        if(STATE.isPaused || els.card.classList.contains('is-flipped')) {
+            STATE.lastFrameTime = now;
+            STATE.timerFrame = requestAnimationFrame(timerLoop);
+            return;
+        }
+
+        const delta = (now - STATE.lastFrameTime) / 1000;
+        STATE.lastFrameTime = now;
+        STATE.timerRemaining -= delta;
+
+        const pct = (STATE.timerRemaining / STATE.timerTotal) * 100;
+        els.timerBar.style.width = `${Math.max(0, pct)}%`;
+        els.timerBar.style.backgroundColor = pct < 30 ? '#ef4444' : '#22c55e';
+
+        if (STATE.timerRemaining <= 0) {
+            // Time out logic -> Mark wrong immediately
+            STATE.timerRemaining = 0;
+            // Fake a wrong input to trigger logic
+            const p = STATE.problems[STATE.currentProblemIndex];
+            if(STATE.mode === 'read') { STATE.inputs[0].textContent='99'; STATE.inputs[1].textContent='99'; }
+            else { STATE.inputs[0].textContent = '999'; }
+            checkAnswer();
+        } else {
+            STATE.timerFrame = requestAnimationFrame(timerLoop);
+        }
+    }
+
+    // --- PROGRESS UI ---
+    function renderProgressDots() {
+        els.progressContainer.innerHTML = '';
+        STATE.problems.forEach((_, i) => {
+            const d = document.createElement('div');
+            d.id = `dot-${i}`;
+            d.className = 'problem-dot dot-pending';
+            if(i===0) d.classList.add('dot-current');
+            els.progressContainer.appendChild(d);
+        });
+    }
+
+    function updateDot(idx, isCorrect) {
+        const dot = document.getElementById(`dot-${idx}`);
+        dot.className = `problem-dot ${isCorrect ? 'dot-correct' : 'dot-wrong'}`;
+    }
+
+    // --- VISUAL FX ---
+    function triggerConfetti(target) {
+        const rect = target.getBoundingClientRect();
+        const colors = ['#4f46e5', '#22c55e', '#eab308', '#ec4899'];
+        for(let i=0; i<15; i++) {
+            const p = document.createElement('div');
+            p.className = 'tag-particle';
+            p.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
+            p.style.left = (rect.left + rect.width/2) + 'px';
+            p.style.top = (rect.top + rect.height/2) + 'px';
+            p.style.width = (Math.random()*8+4)+'px'; p.style.height = p.style.width;
+            p.style.setProperty('--transform-to', `translate(${Math.random()*100-50}px, ${Math.random()*100-50}px) scale(0)`);
+            document.body.appendChild(p);
+            setTimeout(() => p.remove(), 600);
+        }
+    }
+
+    function triggerFireworks() {
+        const c = document.getElementById('fireworks-container');
+        c.innerHTML='';
+        for(let i=0; i<40; i++){
+            const p=document.createElement('div'); p.className='particle';
+            const s=Math.floor(Math.random()*10+5)+'px'; 
+            p.style.width=s; p.style.height=s;
+            p.style.backgroundColor=['#ff0','#f00','#0f0','#00f'][Math.floor(Math.random()*4)];
+            p.style.left='50%'; p.style.top='50%'; 
+            p.style.setProperty('--transform-to',`translate(${Math.random()*300-150}px, ${Math.random()*300-150}px) scale(0)`);
+            c.appendChild(p);
+        }
+    }
+
+    // --- EVENT BINDING ---
+    document.getElementById('mode-read').onclick = () => { STATE.mode = 'read'; showSettings(); };
+    document.getElementById('mode-easy').onclick = () => { STATE.mode = 'easy'; showSettings(); };
+    document.getElementById('mode-hard').onclick = () => { STATE.mode = 'hard'; showSettings(); };
+
+    function showSettings() {
+        els.modeStep.classList.add('hidden');
+        els.settingsStep.classList.remove('hidden');
+    }
+
+    document.getElementById('sound-on-btn').onclick = function() { 
+        STATE.isSoundOn=true; this.classList.add('preset-btn-selected'); document.getElementById('sound-off-btn').classList.remove('preset-btn-selected');
+    };
+    document.getElementById('sound-off-btn').onclick = function() { 
+        STATE.isSoundOn=false; this.classList.add('preset-btn-selected'); document.getElementById('sound-on-btn').classList.remove('preset-btn-selected');
+    };
+    
+    document.getElementById('timer-yes-btn').onclick = function() {
+        STATE.isTimerEnabled=true; this.classList.add('preset-btn-selected'); document.getElementById('timer-no-btn').classList.remove('preset-btn-selected');
+        document.getElementById('timer-input-container').classList.remove('hidden');
+        document.getElementById('timer-input-container').classList.add('flex');
+    };
+    document.getElementById('timer-no-btn').onclick = function() {
+        STATE.isTimerEnabled=false; this.classList.add('preset-btn-selected'); document.getElementById('timer-yes-btn').classList.remove('preset-btn-selected');
+        document.getElementById('timer-input-container').classList.add('hidden');
+        document.getElementById('timer-input-container').classList.remove('flex');
+    };
+
+    document.getElementById('start-game-btn').onclick = () => {
+        const sec = parseInt(document.getElementById('seconds-input').value);
+        if(!isNaN(sec)) STATE.timerTotal = sec;
+        startGame();
+    };
+
+    document.getElementById('pause-btn').onclick = function() {
+        STATE.isPaused = !STATE.isPaused;
+        this.textContent = STATE.isPaused ? 'Resume' : 'Pause';
+        if(STATE.isPaused) {
+            STATE.elapsedPauseTimeStart = Date.now();
+            els.visualArea.classList.add('opacity-0'); // Hide questions while paused
+        } else {
+            STATE.elapsedPauseTime += (Date.now() - STATE.elapsedPauseTimeStart);
+            els.visualArea.classList.remove('opacity-0');
+        }
+    };
+    
+    document.getElementById('restart-btn').onclick = () => location.reload();
+    document.getElementById('win-play-again-btn').onclick = () => startGame(false);
+    document.getElementById('win-start-over-btn').onclick = () => location.reload();
+    document.getElementById('start-practice-btn').onclick = () => startGame(true);
+
+    // Initial State
+    initKeypad();
+    document.getElementById('sound-on-btn').click();
+    document.getElementById('timer-no-btn').click();
+
+  </script>
+</body>
+</html>
