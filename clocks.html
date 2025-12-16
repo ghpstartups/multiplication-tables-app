@@ -62,7 +62,7 @@
         }
         .option-btn:active { transform: scale(0.97); }
         .selected-btn { 
-            background: #7c3aed !important; /* Purple theme for Time */
+            background: #7c3aed !important; 
             color:#fff !important; 
             border-color:#6d28d9 !important; 
             box-shadow: 0 4px 6px rgba(124, 58, 237, 0.3);
@@ -96,7 +96,7 @@
                 <div id="mode-buttons" class="grid grid-cols-3 gap-2">
                     <button type="button" data-mode="clocks" class="option-btn selected-btn">
                         <span>Read the Clock</span>
-                        <small>Drawings</small>
+                        <small>Analog Drawings</small>
                     </button>
                     <button type="button" data-mode="math-easy" class="option-btn">
                         <span>Easy Math</span>
@@ -112,8 +112,8 @@
             <div id="operation-section" class="config-section hidden">
                 <h3 class="text-md font-bold text-slate-700 mb-2">2. Select Operation</h3>
                 <div id="operation-buttons" class="grid grid-cols-3 gap-2">
-                    <button type="button" data-op="+" class="option-btn selected-btn">Add Minutes</button>
-                    <button type="button" data-op="-" class="option-btn">Subtract Minutes</button>
+                    <button type="button" data-op="+" class="option-btn selected-btn">Add Time</button>
+                    <button type="button" data-op="-" class="option-btn">Subtract Time</button>
                     <button type="button" data-op="+-" class="option-btn">Both</button>
                 </div>
             </div>
@@ -148,10 +148,10 @@
     <script>
         // CONFIG
         const CLOCKS_PER_PAGE = 12; // 3 cols x 4 rows
-        const MATH_ROWS = 10;
-        const MATH_COLS = 6;
+        const MATH_ROWS = 7; // Fewer rows to allow vertical space for calculations
+        const MATH_COLS = 5; 
         const MATH_PER_PAGE = MATH_ROWS * MATH_COLS;
-        const PAGES_TO_GENERATE = 2; // Fixed number of pages to generate per click
+        const PAGES_TO_GENERATE = 2; 
 
         // UI Elements
         const generateBtn = document.getElementById('generate-btn');
@@ -187,10 +187,9 @@
 
             for(let i=0; i<count; i++) {
                 if(mode === 'clocks') {
-                    // Generate random HH:MM
                     problems.push({
                         h: getRandomInt(1, 12),
-                        m: getRandomInt(0, 11) * 5 // 5 minute intervals for cleaner drawings
+                        m: getRandomInt(0, 59) // Random minutes for difficulty
                     });
                 } else {
                     // Math Modes
@@ -202,35 +201,26 @@
                     let change = 0;
                     
                     if (mode === 'math-easy') {
-                        // SAME HOUR constraint
+                        // SAME HOUR
                         if (op === '+') {
-                            // Max we can add is (59 - m)
                             const maxAdd = 59 - m;
                             change = getRandomInt(1, Math.max(1, maxAdd)); 
                         } else {
-                            // Max we can sub is m
                             change = getRandomInt(1, Math.max(1, m));
                         }
                     } else {
-                        // CHANGE HOUR constraint (Hard)
-                        // Must force hour rollover/rollunder
+                        // CHANGE HOUR (Hard)
                         if (op === '+') {
-                            // Must result in min >= 60
-                            // min + change >= 60  ->  change >= 60 - min
                             const minAdd = 60 - m;
-                            change = getRandomInt(minAdd, 55); // Cap addition at 55 mins
+                            change = getRandomInt(minAdd, 55); 
                         } else {
-                            // Must result in min < 0
-                            // min - change < 0 -> change > min
                             const minSub = m + 1;
                             change = getRandomInt(minSub, 55);
                         }
                     }
-
                     problems.push({ h, m, change, op });
                 }
             }
-
             return { problems, mode, pageCount: PAGES_TO_GENERATE };
         }
 
@@ -239,43 +229,63 @@
             const centerX = x + radius;
             const centerY = y + radius;
 
-            // Draw Circle
-            doc.setLineWidth(1.5);
-            doc.circle(centerX, centerY, radius);
-
-            // Draw Ticks & Numbers
-            doc.setFontSize(9);
-            doc.setFont("helvetica", "bold");
-            
-            for (let i = 1; i <= 12; i++) {
-                const angle = (i * 30) * (Math.PI / 180);
-                // Numbers position (slightly inside)
-                const textR = radius - 8;
-                const tx = centerX + textR * Math.sin(angle);
-                const ty = centerY - textR * Math.cos(angle);
-                
-                // Adjust text alignment roughly to center
-                const txt = i.toString();
-                const w = doc.getTextWidth(txt);
-                doc.text(txt, tx - (w/2), ty + 3);
+            // 1. Draw Minute Ticks (Small) - Loop 60 times
+            doc.setLineWidth(0.5);
+            for (let i = 0; i < 60; i++) {
+                if (i % 5 !== 0) { // Skip hour marks here, draw them later
+                    const angle = (i * 6) * (Math.PI / 180);
+                    const outerR = radius;
+                    const innerR = radius - 3; // Short ticks
+                    const tx1 = centerX + outerR * Math.sin(angle);
+                    const ty1 = centerY - outerR * Math.cos(angle);
+                    const tx2 = centerX + innerR * Math.sin(angle);
+                    const ty2 = centerY - innerR * Math.cos(angle);
+                    doc.line(tx1, ty1, tx2, ty2);
+                }
             }
 
-            // Draw Hands
+            // 2. Draw Hour Ticks (Bold) - Loop 12 times
+            doc.setLineWidth(1.5);
+            for (let i = 0; i < 12; i++) {
+                const angle = (i * 30) * (Math.PI / 180);
+                const outerR = radius;
+                const innerR = radius - 6; // Long ticks
+                const tx1 = centerX + outerR * Math.sin(angle);
+                const ty1 = centerY - outerR * Math.cos(angle);
+                const tx2 = centerX + innerR * Math.sin(angle);
+                const ty2 = centerY - innerR * Math.cos(angle);
+                doc.line(tx1, ty1, tx2, ty2);
+            }
+
+            // 3. Draw Numbers
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "bold");
+            for (let i = 1; i <= 12; i++) {
+                const angle = (i * 30) * (Math.PI / 180);
+                const textR = radius - 14; // Move numbers inside ticks
+                const tx = centerX + textR * Math.sin(angle);
+                const ty = centerY - textR * Math.cos(angle);
+                const txt = i.toString();
+                const w = doc.getTextWidth(txt);
+                // Adjust for vertical alignment
+                doc.text(txt, tx - (w/2), ty + 3.5);
+            }
+
+            // 4. Draw Hands
             // Minute Hand
             const minAngle = (m * 6) * (Math.PI / 180);
-            const minLength = radius - 10;
+            const minLength = radius - 5; // Reaches ticks
             const mx = centerX + minLength * Math.sin(minAngle);
             const my = centerY - minLength * Math.cos(minAngle);
             doc.setLineWidth(1.5);
             doc.line(centerX, centerY, mx, my);
 
             // Hour Hand
-            // Hour hand moves 0.5 degrees per minute
             const hourAngle = ((h % 12) * 30 + m * 0.5) * (Math.PI / 180);
-            const hourLength = radius - 20;
+            const hourLength = radius - 18;
             const hx = centerX + hourLength * Math.sin(hourAngle);
             const hy = centerY - hourLength * Math.cos(hourAngle);
-            doc.setLineWidth(2.5);
+            doc.setLineWidth(3);
             doc.line(centerX, centerY, hx, hy);
 
             // Center Dot
@@ -292,15 +302,14 @@
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
             
-            doc.setFont('helvetica', 'normal');
             doc.setTextColor(0, 0, 0); 
 
             // Common Title
             let title = "";
             let sub = "";
-            if (data.mode === 'clocks') { title = "Time Worksheet"; sub = "Read the clocks and write the time."; }
-            else if (data.mode === 'math-easy') { title = "Time Math: Easy"; sub = "Add or subtract minutes (Hour stays the same)."; }
-            else { title = "Time Math: Advanced"; sub = "Add or subtract minutes (Hour changes)."; }
+            if (data.mode === 'clocks') { title = "Time Worksheet"; sub = "Read the clock and write the time."; }
+            else if (data.mode === 'math-easy') { title = "Time Math: Easy"; sub = "Add or subtract time."; }
+            else { title = "Time Math: Advanced"; sub = "Add or subtract time (Watch for the hour change!)."; }
 
             for (let p = 0; p < data.pageCount; p++) {
                 if (p > 0) doc.addPage();
@@ -320,7 +329,8 @@
                 const pageProblems = data.problems.slice(p * (data.mode === 'clocks' ? CLOCKS_PER_PAGE : MATH_PER_PAGE), (p+1) * (data.mode === 'clocks' ? CLOCKS_PER_PAGE : MATH_PER_PAGE));
 
                 if (data.mode === 'clocks') {
-                    // --- RENDER CLOCKS ---
+                    // --- CLOCK MODE ---
+                    doc.setFont('helvetica', 'normal');
                     const cols = 3;
                     const rows = 4;
                     const colWidth = (pageWidth - 2 * margin) / cols;
@@ -333,8 +343,6 @@
                         
                         const x = margin + (c * colWidth);
                         const y = startY + (r * rowHeight) + 10;
-
-                        // Center the clock in the cell
                         const cellCenterX = x + (colWidth/2) - clockRadius;
                         
                         drawClock(doc, cellCenterX, y, clockRadius, prob.h, prob.m);
@@ -351,9 +359,13 @@
                     });
 
                 } else {
-                    // --- RENDER MATH ---
+                    // --- MATH MODE (PERFECT ALIGNMENT) ---
+                    // Switch to Monospace font for alignment
+                    doc.setFont("courier", "bold"); 
+                    doc.setFontSize(14);
+
                     const colWidth = (pageWidth - 2 * margin) / MATH_COLS;
-                    const rowHeight = 42; 
+                    const rowHeight = 85; // Taller rows for vertical math
                     const gridHeight = MATH_ROWS * rowHeight;
 
                     // Vertical Dividers
@@ -366,31 +378,38 @@
                     doc.setLineWidth(1);
                     doc.line(margin, startY + gridHeight, pageWidth - margin, startY + gridHeight);
 
-                    doc.setFontSize(11);
-                    
                     pageProblems.forEach((prob, i) => {
                         if (i >= MATH_PER_PAGE) return;
                         
                         const c = i % MATH_COLS;
                         const r = Math.floor(i / MATH_COLS);
 
-                        const x = margin + (c * colWidth) + 10; 
-                        const y = startY + (r * rowHeight) + 15;
+                        const x = margin + (c * colWidth) + (colWidth / 2) + 20; // Bias right slightly
+                        const y = startY + (r * rowHeight) + 25;
                         
-                        // Draw Vertical Math Problem
-                        //   3:45
-                        // + 15 min
+                        // Format numbers: HH:MM and 00:MM
+                        const timeStr = `${padTime(prob.h)}:${padTime(prob.m)}`;
+                        const changeStr = `00:${padTime(prob.change)}`;
                         
-                        doc.text(`${prob.h}:${padTime(prob.m)}`, x + 25, y, {align: 'right'});
-                        doc.text(`${prob.op} ${prob.change} min`, x + 25, y + 12, {align: 'right'});
+                        // RIGHT ALIGNMENT
+                        // doc.text(string, x, y, { align: 'right' });
                         
-                        // Small line under calculation
-                        doc.setLineWidth(0.5);
-                        doc.line(x, y + 16, x + 35, y + 16);
+                        // Line 1: The Time
+                        doc.text(timeStr, x, y, { align: 'right' });
+                        
+                        // Line 2: Operator + Change
+                        doc.text(`${prob.op} ${changeStr}`, x, y + 16, { align: 'right' });
+                        
+                        // Line 3: The horizontal bar
+                        doc.setLineWidth(1.5);
+                        // Draw a fixed width line based on monospace char width
+                        // "12:00" is 5 chars wide approx
+                        const lineLen = 65; 
+                        doc.line(x - lineLen, y + 22, x, y + 22);
                     });
                 }
 
-                // Footer
+                doc.setFont('helvetica', 'normal');
                 doc.setFontSize(9);
                 doc.text(`Page ${p + 1} of ${data.pageCount}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
             }
@@ -400,25 +419,20 @@
             
             pdfFrame.src = lastGeneratedPDF;
             downloadBtn.classList.remove('hidden');
-            
-            // Update stats
             statsDisplay.textContent = `${data.problems.length} Problems Created`;
         }
 
-
-        // --- Event Listeners ---
+        // --- Listeners ---
         function updateSelection(containerId, selectedElement) {
             document.getElementById(containerId).querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected-btn'));
             selectedElement.classList.add('selected-btn');
             
-            // Toggle Operations visibility
             const mode = document.querySelector('#mode-buttons .selected-btn').dataset.mode;
             if (mode === 'clocks') {
                 operationSection.classList.add('hidden');
             } else {
                 operationSection.classList.remove('hidden');
             }
-
             generatePDF(); 
         }
 
