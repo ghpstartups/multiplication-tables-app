@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /> 
+    <title>Time Worksheet Generator</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f3f4f6; 
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+        .fredoka { 
+            font-family: 'Fredoka One', cursive; 
+            font-variant-numeric: tabular-nums; 
+        }
+        .app-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        
+        .config-section { 
+            margin-bottom: 12px; 
+            padding: 16px; 
+            border-radius: 12px; 
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+            border: 1px solid #e5e7eb;
+        }
+
+        .option-btn { 
+            transition: all 0.2s ease; 
+            padding: 12px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            text-align: center;
+            line-height: 1.3;
+            border: 1px solid #e5e7eb;
+            background-color: #f9fafb;
+            color: #4b5563;
+            border-radius: 0.5rem;
+        }
+        .option-btn small {
+            font-weight: 400;
+            font-size: 0.75rem;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+        .option-btn:active { transform: scale(0.97); }
+        .selected-btn { 
+            background: #7c3aed !important; /* Purple theme for Time */
+            color:#fff !important; 
+            border-color:#6d28d9 !important; 
+            box-shadow: 0 4px 6px rgba(124, 58, 237, 0.3);
+        }
+        .option-btn:not(.selected-btn):hover { background-color: #f3f4f6; }
+
+        .iframe-container {
+            width: 100%;
+            height: 80vh; 
+            background-color: #525659;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #pdf-preview-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="app-container">
+        <h1 class="text-2xl md:text-3xl fredoka text-slate-800 text-center mb-4">Time Worksheet Generator</h1>
+
+        <div class="flex flex-col gap-3">
+            
+            <div id="mode-section" class="config-section">
+                <h3 class="text-md font-bold text-slate-700 mb-2">1. Select Activity Type</h3>
+                <div id="mode-buttons" class="grid grid-cols-3 gap-2">
+                    <button type="button" data-mode="clocks" class="option-btn selected-btn">
+                        <span>Read the Clock</span>
+                        <small>Drawings</small>
+                    </button>
+                    <button type="button" data-mode="math-easy" class="option-btn">
+                        <span>Easy Math</span>
+                        <small>Same Hour</small>
+                    </button>
+                    <button type="button" data-mode="math-hard" class="option-btn">
+                        <span>Hard Math</span>
+                        <small>Change Hour</small>
+                    </button>
+                </div>
+            </div>
+
+            <div id="operation-section" class="config-section hidden">
+                <h3 class="text-md font-bold text-slate-700 mb-2">2. Select Operation</h3>
+                <div id="operation-buttons" class="grid grid-cols-3 gap-2">
+                    <button type="button" data-op="+" class="option-btn selected-btn">Add Minutes</button>
+                    <button type="button" data-op="-" class="option-btn">Subtract Minutes</button>
+                    <button type="button" data-op="+-" class="option-btn">Both</button>
+                </div>
+            </div>
+
+            <div class="config-section border-l-4 border-l-purple-500">
+                <div class="text-center mb-4">
+                    <p id="stats-display" class="text-lg font-bold text-purple-700 mt-1">
+                        ...
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button id="generate-btn" class="bg-slate-800 text-white py-3 rounded-lg text-lg fredoka hover:bg-slate-900 active:scale-95 transition-transform shadow-md w-full">
+                        Generate New
+                    </button>
+                    <button id="download-btn" class="bg-green-600 text-white py-3 rounded-lg text-lg fredoka hover:bg-green-700 active:scale-95 transition-transform shadow-md hidden w-full">
+                        Download PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6">
+            <h3 class="text-lg font-bold text-slate-700 mb-2 pl-1">PDF Preview</h3>
+            <div class="iframe-container shadow-lg">
+                <iframe id="pdf-preview-frame" title="PDF Preview"></iframe>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // CONFIG
+        const CLOCKS_PER_PAGE = 12; // 3 cols x 4 rows
+        const MATH_ROWS = 10;
+        const MATH_COLS = 6;
+        const MATH_PER_PAGE = MATH_ROWS * MATH_COLS;
+        const PAGES_TO_GENERATE = 2; // Fixed number of pages to generate per click
+
+        // UI Elements
+        const generateBtn = document.getElementById('generate-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const modeButtons = document.getElementById('mode-buttons');
+        const operationButtons = document.getElementById('operation-buttons');
+        const operationSection = document.getElementById('operation-section');
+        const statsDisplay = document.getElementById('stats-display');
+        const pdfFrame = document.getElementById('pdf-preview-frame');
+
+        let lastGeneratedPDF = null;
+        let lastFileName = "time_worksheet.pdf";
+
+        // --- Helpers ---
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function padTime(num) {
+            return num < 10 ? '0' + num : num;
+        }
+
+        // --- Logic: Generate Problems ---
+        function generateData() {
+            const modeBtn = document.querySelector('#mode-buttons .selected-btn');
+            const opBtn = document.querySelector('#operation-buttons .selected-btn');
+            
+            const mode = modeBtn.dataset.mode;
+            const opCode = opBtn.dataset.op;
+
+            let problems = [];
+            const count = mode === 'clocks' ? (CLOCKS_PER_PAGE * PAGES_TO_GENERATE) : (MATH_PER_PAGE * PAGES_TO_GENERATE);
+
+            for(let i=0; i<count; i++) {
+                if(mode === 'clocks') {
+                    // Generate random HH:MM
+                    problems.push({
+                        h: getRandomInt(1, 12),
+                        m: getRandomInt(0, 11) * 5 // 5 minute intervals for cleaner drawings
+                    });
+                } else {
+                    // Math Modes
+                    let op = opCode;
+                    if(op === '+-') op = Math.random() > 0.5 ? '+' : '-';
+
+                    let h = getRandomInt(1, 12);
+                    let m = getRandomInt(0, 59);
+                    let change = 0;
+                    
+                    if (mode === 'math-easy') {
+                        // SAME HOUR constraint
+                        if (op === '+') {
+                            // Max we can add is (59 - m)
+                            const maxAdd = 59 - m;
+                            change = getRandomInt(1, Math.max(1, maxAdd)); 
+                        } else {
+                            // Max we can sub is m
+                            change = getRandomInt(1, Math.max(1, m));
+                        }
+                    } else {
+                        // CHANGE HOUR constraint (Hard)
+                        // Must force hour rollover/rollunder
+                        if (op === '+') {
+                            // Must result in min >= 60
+                            // min + change >= 60  ->  change >= 60 - min
+                            const minAdd = 60 - m;
+                            change = getRandomInt(minAdd, 55); // Cap addition at 55 mins
+                        } else {
+                            // Must result in min < 0
+                            // min - change < 0 -> change > min
+                            const minSub = m + 1;
+                            change = getRandomInt(minSub, 55);
+                        }
+                    }
+
+                    problems.push({ h, m, change, op });
+                }
+            }
+
+            return { problems, mode, pageCount: PAGES_TO_GENERATE };
+        }
+
+        // --- PDF DRAWING: Clocks ---
+        function drawClock(doc, x, y, radius, h, m) {
+            const centerX = x + radius;
+            const centerY = y + radius;
+
+            // Draw Circle
+            doc.setLineWidth(1.5);
+            doc.circle(centerX, centerY, radius);
+
+            // Draw Ticks & Numbers
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "bold");
+            
+            for (let i = 1; i <= 12; i++) {
+                const angle = (i * 30) * (Math.PI / 180);
+                // Numbers position (slightly inside)
+                const textR = radius - 8;
+                const tx = centerX + textR * Math.sin(angle);
+                const ty = centerY - textR * Math.cos(angle);
+                
+                // Adjust text alignment roughly to center
+                const txt = i.toString();
+                const w = doc.getTextWidth(txt);
+                doc.text(txt, tx - (w/2), ty + 3);
+            }
+
+            // Draw Hands
+            // Minute Hand
+            const minAngle = (m * 6) * (Math.PI / 180);
+            const minLength = radius - 10;
+            const mx = centerX + minLength * Math.sin(minAngle);
+            const my = centerY - minLength * Math.cos(minAngle);
+            doc.setLineWidth(1.5);
+            doc.line(centerX, centerY, mx, my);
+
+            // Hour Hand
+            // Hour hand moves 0.5 degrees per minute
+            const hourAngle = ((h % 12) * 30 + m * 0.5) * (Math.PI / 180);
+            const hourLength = radius - 20;
+            const hx = centerX + hourLength * Math.sin(hourAngle);
+            const hy = centerY - hourLength * Math.cos(hourAngle);
+            doc.setLineWidth(2.5);
+            doc.line(centerX, centerY, hx, hy);
+
+            // Center Dot
+            doc.circle(centerX, centerY, 2, 'F');
+        }
+
+        // --- PDF GENERATION ---
+        function generatePDF() {
+            const data = generateData();
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+            
+            const margin = 30; 
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+            
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(0, 0, 0); 
+
+            // Common Title
+            let title = "";
+            let sub = "";
+            if (data.mode === 'clocks') { title = "Time Worksheet"; sub = "Read the clocks and write the time."; }
+            else if (data.mode === 'math-easy') { title = "Time Math: Easy"; sub = "Add or subtract minutes (Hour stays the same)."; }
+            else { title = "Time Math: Advanced"; sub = "Add or subtract minutes (Hour changes)."; }
+
+            for (let p = 0; p < data.pageCount; p++) {
+                if (p > 0) doc.addPage();
+
+                // HEADER
+                doc.setFontSize(18);
+                doc.setFont('helvetica', 'bold');
+                doc.text(title, pageWidth / 2, margin + 20, { align: 'center' });
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.text(sub, pageWidth / 2, margin + 35, { align: 'center' });
+                
+                const startY = margin + 50;
+                doc.setLineWidth(1);
+                doc.line(margin, startY, pageWidth - margin, startY);
+
+                const pageProblems = data.problems.slice(p * (data.mode === 'clocks' ? CLOCKS_PER_PAGE : MATH_PER_PAGE), (p+1) * (data.mode === 'clocks' ? CLOCKS_PER_PAGE : MATH_PER_PAGE));
+
+                if (data.mode === 'clocks') {
+                    // --- RENDER CLOCKS ---
+                    const cols = 3;
+                    const rows = 4;
+                    const colWidth = (pageWidth - 2 * margin) / cols;
+                    const rowHeight = (pageHeight - startY - 30) / rows;
+                    const clockRadius = 40;
+
+                    pageProblems.forEach((prob, i) => {
+                        const c = i % cols;
+                        const r = Math.floor(i / cols);
+                        
+                        const x = margin + (c * colWidth);
+                        const y = startY + (r * rowHeight) + 10;
+
+                        // Center the clock in the cell
+                        const cellCenterX = x + (colWidth/2) - clockRadius;
+                        
+                        drawClock(doc, cellCenterX, y, clockRadius, prob.h, prob.m);
+
+                        // Answer Line
+                        doc.setLineWidth(1);
+                        const lineY = y + (clockRadius * 2) + 30;
+                        const lineW = 60;
+                        const lineX = x + (colWidth/2) - (lineW/2);
+                        
+                        doc.line(lineX, lineY, lineX + lineW, lineY);
+                        doc.setFontSize(8);
+                        doc.text("Time:", lineX - 25, lineY - 2);
+                    });
+
+                } else {
+                    // --- RENDER MATH ---
+                    const colWidth = (pageWidth - 2 * margin) / MATH_COLS;
+                    const rowHeight = 42; 
+                    const gridHeight = MATH_ROWS * rowHeight;
+
+                    // Vertical Dividers
+                    doc.setLineWidth(0.5);
+                    for(let c = 1; c < MATH_COLS; c++) {
+                        const lineX = margin + (c * colWidth);
+                        doc.line(lineX, startY, lineX, startY + gridHeight);
+                    }
+                    // Bottom Border
+                    doc.setLineWidth(1);
+                    doc.line(margin, startY + gridHeight, pageWidth - margin, startY + gridHeight);
+
+                    doc.setFontSize(11);
+                    
+                    pageProblems.forEach((prob, i) => {
+                        if (i >= MATH_PER_PAGE) return;
+                        
+                        const c = i % MATH_COLS;
+                        const r = Math.floor(i / MATH_COLS);
+
+                        const x = margin + (c * colWidth) + 10; 
+                        const y = startY + (r * rowHeight) + 15;
+                        
+                        // Draw Vertical Math Problem
+                        //   3:45
+                        // + 15 min
+                        
+                        doc.text(`${prob.h}:${padTime(prob.m)}`, x + 25, y, {align: 'right'});
+                        doc.text(`${prob.op} ${prob.change} min`, x + 25, y + 12, {align: 'right'});
+                        
+                        // Small line under calculation
+                        doc.setLineWidth(0.5);
+                        doc.line(x, y + 16, x + 35, y + 16);
+                    });
+                }
+
+                // Footer
+                doc.setFontSize(9);
+                doc.text(`Page ${p + 1} of ${data.pageCount}`, pageWidth / 2, pageHeight - 15, { align: 'center' });
+            }
+
+            lastGeneratedPDF = doc.output('bloburl');
+            lastFileName = `time_${data.mode}.pdf`;
+            
+            pdfFrame.src = lastGeneratedPDF;
+            downloadBtn.classList.remove('hidden');
+            
+            // Update stats
+            statsDisplay.textContent = `${data.problems.length} Problems Created`;
+        }
+
+
+        // --- Event Listeners ---
+        function updateSelection(containerId, selectedElement) {
+            document.getElementById(containerId).querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected-btn'));
+            selectedElement.classList.add('selected-btn');
+            
+            // Toggle Operations visibility
+            const mode = document.querySelector('#mode-buttons .selected-btn').dataset.mode;
+            if (mode === 'clocks') {
+                operationSection.classList.add('hidden');
+            } else {
+                operationSection.classList.remove('hidden');
+            }
+
+            generatePDF(); 
+        }
+
+        modeButtons.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (btn) updateSelection('mode-buttons', btn);
+        });
+
+        operationButtons.addEventListener('click', (e) => {
+            const btn = e.target.closest('button');
+            if (btn) updateSelection('operation-buttons', btn);
+        });
+
+        generateBtn.addEventListener('click', generatePDF); 
+
+        downloadBtn.addEventListener('click', () => {
+            if (lastGeneratedPDF) {
+                const link = document.createElement('a');
+                link.href = lastGeneratedPDF;
+                link.download = lastFileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            generatePDF();
+        });
+
+    </script>
+</body>
+</html>
