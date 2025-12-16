@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Multiplication Mastery</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
     body { font-family: 'Inter', sans-serif; touch-action: manipulation; overflow: hidden; position: fixed; width: 100%; height: 100%; margin: 0; padding-top: 1rem; }
@@ -327,6 +327,7 @@
     let isTimerEnabled = false, timerSecondsTotal = 10, timerSecondsRemaining = 10;
     let questionTimerAnimationFrame;
     let lastTimerUpdateTimestamp = 0;
+    let keyboardDebounce = null; // Fix for ghost clicks
 
     let currentProblem, correctAnswer, activeProblemKey = null;
     let allProblemsForRound = [], problemsToDo = [], problemsGottenWrongInRound = [];
@@ -344,6 +345,16 @@
     const correctSynth = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } }).toDestination();
     const incorrectSynth = new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.5 }, volume: -10 }).toDestination();
     const fanfareSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fatsawtooth' }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.4 } }).toDestination();
+
+    // --- SAFARI AUDIO FIX ---
+    const unlockAudio = async () => {
+        if (Tone.context.state !== 'running') {
+            await Tone.start();
+        }
+        document.body.removeEventListener('click', unlockAudio);
+        document.body.removeEventListener('touchstart', unlockAudio);
+        document.body.removeEventListener('keydown', unlockAudio);
+    };
 
     async function playSound(synth, note, duration, timeOffset = 0) { 
         if (isSoundOn) {
@@ -399,6 +410,9 @@
         if(isTimerEnabled) {
              requestAnimationFrame(timerLoop);
         }
+
+        // Re-check audio state on resume
+        if (isSoundOn && Tone.context.state !== 'running') { Tone.start().catch(e=>console.log(e)); }
 
         pauseBtn.textContent = 'Pause';
         pauseBtn.classList.remove('is-paused-glow');
@@ -460,7 +474,7 @@
       answerDisplayEl.textContent = currentInput;
     }
 
-    // Keyboard support
+    // Keyboard support - FIXED WITH DEBOUNCE LOGIC
     document.addEventListener('keydown', (e) => {
         if (gameContainerEl.classList.contains('hidden') || cardEl.classList.contains('pointer-events-none')) return;
         if (isPaused) resumeGame();
@@ -471,19 +485,30 @@
             if (gameMode === 'keypad') {
                 handleKeypadInput(key);
             } else if (gameMode === 'choice') {
-                 // Try to match typed number to an option
+                 if (keyboardDebounce) clearTimeout(keyboardDebounce);
+
                  currentInput += key;
                  if (currentInput.length > 3) currentInput = key;
                  
-                 const num = parseInt(currentInput);
                  const buttons = Array.from(answerOptionsEl.querySelectorAll('button'));
-                 const match = buttons.find(btn => parseInt(btn.textContent) === num);
-                 
-                 if (match) {
-                     match.click();
-                     currentInput = ''; 
+                 const opts = buttons.map(b => b.textContent);
+
+                 const exactMatch = opts.find(o => o === currentInput);
+                 const isPrefix = opts.some(o => o.startsWith(currentInput) && o !== currentInput);
+
+                 if (exactMatch && !isPrefix) {
+                     const matchBtn = buttons.find(b => b.textContent === exactMatch);
+                     matchBtn.click();
+                     currentInput = '';
+                 } else if (exactMatch && isPrefix) {
+                     keyboardDebounce = setTimeout(() => {
+                         const matchBtn = buttons.find(b => b.textContent === exactMatch);
+                         if (matchBtn) matchBtn.click();
+                         currentInput = '';
+                     }, 500);
+                 } else if (!exactMatch && !isPrefix) {
+                     setTimeout(() => { currentInput = ''; }, 300);
                  }
-                 setTimeout(() => { if(!match) currentInput = ''; }, 1500);
             }
         } else if (key === 'Backspace') {
             if (gameMode === 'keypad') handleKeypadInput('backspace');
@@ -950,6 +975,7 @@
       startGameBtn.disabled = true;
       setupErrorEl.textContent = '';
       
+      // Attempt audio start on button click
       if(isSoundOn && Tone.context.state !== 'running') { await Tone.start(); }
 
       if (setupStep === 'range') {
@@ -1023,9 +1049,6 @@
         
         for (let i = from; i <= to; i++) {
            for (let j = 1; j <= 12; j++) {
-              // Difficulty Logic Swap:
-              // Easy = Include everything (Standard)
-              // Hard = EXCLUDE 1 and 10
               if (difficulty === 'hard') {
                   if (i === 1 || i === 10 || j === 1 || j === 10) continue;
               }
@@ -1121,6 +1144,10 @@
     window.onload = () => {
       createKeypad();
       showSetupScreen();
+      // Add Safari Global Audio Unlock Listeners
+      document.body.addEventListener('click', unlockAudio);
+      document.body.addEventListener('touchstart', unlockAudio);
+      document.body.addEventListener('keydown', unlockAudio);
     };
   </script>
 </body>
