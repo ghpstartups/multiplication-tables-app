@@ -81,7 +81,6 @@
             height: 100%;
             border: none;
         }
-        .hidden { display: none; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -92,29 +91,20 @@
         <div class="flex flex-col gap-3">
             
             <div id="mode-section" class="config-section">
-                <h3 class="text-md font-bold text-slate-700 mb-2">1. Select Activity Type</h3>
+                <h3 class="text-md font-bold text-slate-700 mb-2">Select Activity Type</h3>
                 <div id="mode-buttons" class="grid grid-cols-3 gap-2">
                     <button type="button" data-mode="clocks" class="option-btn selected-btn">
                         <span>Read the Clock</span>
-                        <small>12 per page</small>
+                        <small>Write the time</small>
                     </button>
                     <button type="button" data-mode="math-easy" class="option-btn">
-                        <span>Easy Math</span>
-                        <small>Clock +/- Clock = ?</small>
+                        <span>Easy: Elapsed</span>
+                        <small>Difference (Same Hour)</small>
                     </button>
                     <button type="button" data-mode="math-hard" class="option-btn">
-                        <span>Hard Math</span>
-                        <small>Change Hour</small>
+                        <span>Hard: Elapsed</span>
+                        <small>Difference (Next Hour)</small>
                     </button>
-                </div>
-            </div>
-
-            <div id="operation-section" class="config-section hidden">
-                <h3 class="text-md font-bold text-slate-700 mb-2">2. Select Operation</h3>
-                <div id="operation-buttons" class="grid grid-cols-3 gap-2">
-                    <button type="button" data-op="+" class="option-btn selected-btn">Add Time</button>
-                    <button type="button" data-op="-" class="option-btn">Subtract Time</button>
-                    <button type="button" data-op="+-" class="option-btn">Both</button>
                 </div>
             </div>
 
@@ -148,15 +138,13 @@
     <script>
         // CONFIG
         const CLOCKS_PER_PAGE = 12; // 3 cols x 4 rows
-        const MATH_PER_PAGE = 5;    // 1 col x 5 rows (To fit the long equation)
+        const MATH_PER_PAGE = 5;    // 1 col x 5 rows
         const PAGES_TO_GENERATE = 2; 
 
         // UI Elements
         const generateBtn = document.getElementById('generate-btn');
         const downloadBtn = document.getElementById('download-btn');
         const modeButtons = document.getElementById('mode-buttons');
-        const operationButtons = document.getElementById('operation-buttons');
-        const operationSection = document.getElementById('operation-section');
         const statsDisplay = document.getElementById('stats-display');
         const pdfFrame = document.getElementById('pdf-preview-frame');
 
@@ -171,10 +159,7 @@
         // --- Logic: Generate Problems ---
         function generateData() {
             const modeBtn = document.querySelector('#mode-buttons .selected-btn');
-            const opBtn = document.querySelector('#operation-buttons .selected-btn');
-            
             const mode = modeBtn.dataset.mode;
-            const opCode = opBtn.dataset.op;
 
             let problems = [];
             const count = mode === 'clocks' ? (CLOCKS_PER_PAGE * PAGES_TO_GENERATE) : (MATH_PER_PAGE * PAGES_TO_GENERATE);
@@ -185,39 +170,38 @@
                         h: getRandomInt(1, 12),
                         m: getRandomInt(0, 59) 
                     });
-                } else {
-                    let op = opCode;
-                    if(op === '+-') op = Math.random() > 0.5 ? '+' : '-';
-
-                    let h = getRandomInt(1, 12);
-                    let m = getRandomInt(0, 59);
-                    let change = 0;
+                } else if (mode === 'math-easy') {
+                    // SAME HOUR DIFF
+                    const h = getRandomInt(1, 12);
+                    const m1 = getRandomInt(0, 45); // Start time
+                    // Ensure m2 is greater than m1 by at least 5 mins
+                    const diff = getRandomInt(5, 59 - m1); 
+                    const m2 = m1 + diff;
                     
-                    if (mode === 'math-easy') {
-                        if (op === '+') {
-                            const maxAdd = 59 - m;
-                            change = getRandomInt(1, Math.max(1, maxAdd)); 
-                        } else {
-                            change = getRandomInt(1, Math.max(1, m));
-                        }
-                    } else {
-                        if (op === '+') {
-                            const minAdd = 60 - m;
-                            change = getRandomInt(minAdd, 55); 
-                        } else {
-                            const minSub = m + 1;
-                            change = getRandomInt(minSub, 55);
-                        }
-                    }
-                    problems.push({ h, m, change, op });
+                    problems.push({ h1: h, m1: m1, h2: h, m2: m2 });
+                    
+                } else if (mode === 'math-hard') {
+                    // NEXT HOUR DIFF
+                    const h1 = getRandomInt(1, 12);
+                    const m1 = getRandomInt(30, 55); // Start late in the hour
+                    
+                    // Add enough minutes to cross the hour, but keep it reasonable (e.g., within 50 mins total diff)
+                    const diff = getRandomInt(60 - m1 + 5, 50); 
+                    
+                    // Calculate End Time
+                    let totalM = m1 + diff;
+                    let h2 = h1 + 1;
+                    if(h2 > 12) h2 = 1;
+                    let m2 = totalM - 60;
+
+                    problems.push({ h1: h1, m1: m1, h2: h2, m2: m2 });
                 }
             }
             return { problems, mode, pageCount: PAGES_TO_GENERATE };
         }
 
         // --- PDF DRAWING: Clocks ---
-        // showHands: boolean. If false, draws empty face for student to fill.
-        function drawClock(doc, x, y, radius, h, m, showHands = true) {
+        function drawClock(doc, x, y, radius, h, m) {
             const centerX = x + radius;
             const centerY = y + radius;
 
@@ -263,24 +247,22 @@
             // Center Dot
             doc.circle(centerX, centerY, 2, 'F');
 
-            // 3. Hands (Only if requested)
-            if (showHands) {
-                // Minute Hand
-                const minAngle = (m * 6) * (Math.PI / 180);
-                const minLength = radius - 5; 
-                const mx = centerX + minLength * Math.sin(minAngle);
-                const my = centerY - minLength * Math.cos(minAngle);
-                doc.setLineWidth(1.5);
-                doc.line(centerX, centerY, mx, my);
+            // 3. Hands
+            // Minute Hand
+            const minAngle = (m * 6) * (Math.PI / 180);
+            const minLength = radius - 5; 
+            const mx = centerX + minLength * Math.sin(minAngle);
+            const my = centerY - minLength * Math.cos(minAngle);
+            doc.setLineWidth(1.5);
+            doc.line(centerX, centerY, mx, my);
 
-                // Hour Hand
-                const hourAngle = ((h % 12) * 30 + m * 0.5) * (Math.PI / 180);
-                const hourLength = radius - 18;
-                const hx = centerX + hourLength * Math.sin(hourAngle);
-                const hy = centerY - hourLength * Math.cos(hourAngle);
-                doc.setLineWidth(3);
-                doc.line(centerX, centerY, hx, hy);
-            }
+            // Hour Hand
+            const hourAngle = ((h % 12) * 30 + m * 0.5) * (Math.PI / 180);
+            const hourLength = radius - 18;
+            const hx = centerX + hourLength * Math.sin(hourAngle);
+            const hy = centerY - hourLength * Math.cos(hourAngle);
+            doc.setLineWidth(3);
+            doc.line(centerX, centerY, hx, hy);
         }
 
         // --- PDF GENERATION ---
@@ -297,9 +279,9 @@
 
             let title = "";
             let sub = "";
-            if (data.mode === 'clocks') { title = "Time Worksheet"; sub = "Read the clock and write the time."; }
-            else if (data.mode === 'math-easy') { title = "Time Math: Easy"; sub = "Draw the answer clock and write the time."; }
-            else { title = "Time Math: Advanced"; sub = "Draw the answer clock and write the time."; }
+            if (data.mode === 'clocks') { title = "Reading Time"; sub = "Read the clock and write the time below."; }
+            else if (data.mode === 'math-easy') { title = "Elapsed Time (Same Hour)"; sub = "How many minutes have passed between the two clocks?"; }
+            else { title = "Elapsed Time (Next Hour)"; sub = "How many minutes have passed between the two clocks?"; }
 
             for (let p = 0; p < data.pageCount; p++) {
                 if (p > 0) doc.addPage();
@@ -333,7 +315,7 @@
                         const y = startY + (r * rowHeight) + 10;
                         const cellCenterX = x + (colWidth/2) - clockRadius;
                         
-                        drawClock(doc, cellCenterX, y, clockRadius, prob.h, prob.m, true);
+                        drawClock(doc, cellCenterX, y, clockRadius, prob.h, prob.m);
 
                         // Line below
                         doc.setLineWidth(1);
@@ -346,48 +328,46 @@
                     });
 
                 } else {
-                    // --- MODE 2/3: Math Equations (1 Column, 5 Rows) ---
-                    // Structure: [Clock1] [Op] [Clock2] [=] [EmptyClock] [Line]
+                    // --- MODE 2/3: Elapsed Time (1 Column, 5 Rows) ---
+                    // Structure: [Clock 1]  -->  [Clock 2]     [_____ minutes]
                     const rows = MATH_PER_PAGE; // 5
                     const rowHeight = (pageHeight - startY - 30) / rows;
                     const centerY = rowHeight / 2;
-                    const clockRadius = 35; // Size for equation clocks
+                    const clockRadius = 35; 
 
                     doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(20); 
+                    doc.setFontSize(16); 
 
                     pageProblems.forEach((prob, i) => {
                         const rowY = startY + (i * rowHeight);
                         const clockY = rowY + centerY - clockRadius;
                         
-                        let curX = margin; 
+                        let curX = margin + 20; 
 
                         // 1. Start Clock
-                        drawClock(doc, curX, clockY, clockRadius, prob.h, prob.m, true);
-                        curX += (clockRadius*2) + 15;
-
-                        // 2. Operator
-                        doc.text(prob.op, curX, rowY + centerY + 6);
-                        curX += 20;
-
-                        // 3. Change Clock
-                        drawClock(doc, curX, clockY, clockRadius, 12, prob.change, true);
-                        curX += (clockRadius*2) + 15;
-
-                        // 4. Equals
-                        doc.text("=", curX, rowY + centerY + 6);
-                        curX += 20;
-
-                        // 5. Blank Answer Clock
-                        drawClock(doc, curX, clockY, clockRadius, 0, 0, false); // False = No Hands
+                        drawClock(doc, curX, clockY, clockRadius, prob.h1, prob.m1);
                         curX += (clockRadius*2) + 30;
 
-                        // 6. Answer Line
-                        const lineY = rowY + centerY + 10;
+                        // 2. Arrow
+                        // Draw a simple arrow
+                        doc.setLineWidth(2);
+                        doc.line(curX, rowY + centerY, curX + 30, rowY + centerY);
+                        doc.line(curX + 25, rowY + centerY - 5, curX + 30, rowY + centerY);
+                        doc.line(curX + 25, rowY + centerY + 5, curX + 30, rowY + centerY);
+                        curX += 60;
+
+                        // 3. End Clock
+                        drawClock(doc, curX, clockY, clockRadius, prob.h2, prob.m2);
+                        curX += (clockRadius*2) + 50;
+
+                        // 4. Answer Line
                         doc.setLineWidth(1);
-                        doc.line(curX, lineY, curX + 50, lineY);
+                        doc.line(curX, rowY + centerY + 5, curX + 60, rowY + centerY + 5);
                         
-                        // Separator Line (optional, keeps it clean)
+                        doc.setFontSize(12);
+                        doc.text("minutes", curX + 70, rowY + centerY + 5);
+                        
+                        // Separator Line
                         if (i < rows - 1) {
                             doc.setLineWidth(0.5);
                             doc.setDrawColor(200, 200, 200);
@@ -414,24 +394,12 @@
         function updateSelection(containerId, selectedElement) {
             document.getElementById(containerId).querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected-btn'));
             selectedElement.classList.add('selected-btn');
-            
-            const mode = document.querySelector('#mode-buttons .selected-btn').dataset.mode;
-            if (mode === 'clocks') {
-                operationSection.classList.add('hidden');
-            } else {
-                operationSection.classList.remove('hidden');
-            }
             generatePDF(); 
         }
 
         modeButtons.addEventListener('click', (e) => {
             const btn = e.target.closest('button');
             if (btn) updateSelection('mode-buttons', btn);
-        });
-
-        operationButtons.addEventListener('click', (e) => {
-            const btn = e.target.closest('button');
-            if (btn) updateSelection('operation-buttons', btn);
         });
 
         generateBtn.addEventListener('click', generatePDF); 
