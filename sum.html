@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Math Mastery: No Zeros</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
     body { font-family: 'Inter', sans-serif; touch-action: manipulation; overflow: hidden; position: fixed; width: 100%; height: 100%; margin: 0; padding-top: 1rem; }
@@ -305,6 +305,7 @@
     let isTimerEnabled = false, timerSecondsTotal = 10, timerSecondsRemaining = 10;
     let questionTimerAnimationFrame; // For the requestAnimationFrame loop
     let lastTimerUpdateTimestamp = 0;
+    let keyboardDebounce = null; // New state for fixing keyboard ghost clicks
     
     let currentProblem, correctAnswer, activeProblemKey = null;
     let allProblemsForRound = [], problemsToDo = [], problemsGottenWrongInRound = [];
@@ -323,8 +324,21 @@
     const incorrectSynth = new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.5 }, volume: -10 }).toDestination();
     const fanfareSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fatsawtooth' }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.4 } }).toDestination();
 
+    // --- SAFARI AUDIO FIX ---
+    // This function unlocks AudioContext on the very first user interaction anywhere on the page.
+    const unlockAudio = async () => {
+        if (Tone.context.state !== 'running') {
+            await Tone.start();
+        }
+        // Remove listeners once unlocked to save resources
+        document.body.removeEventListener('click', unlockAudio);
+        document.body.removeEventListener('touchstart', unlockAudio);
+        document.body.removeEventListener('keydown', unlockAudio);
+    };
+
     async function playSound(synth, note, duration, timeOffset = 0) { 
         if (isSoundOn) {
+            // Safety check, but normally unlockAudio handles this
             if(Tone.context.state !== 'running') await Tone.start();
             synth.triggerAttackRelease(note, duration, Tone.now() + timeOffset); 
         }
@@ -358,8 +372,6 @@
         clearInterval(gameClockInterval);
         elapsedTimeBeforePause = Date.now() - startTime;
         
-        // Timer bar will effectively pause because the animation frame loop checks `isPaused`
-        
         pauseBtn.textContent = 'Resume';
         pauseBtn.classList.add('is-paused-glow');
         cardEl.classList.add('opacity-50', 'pointer-events-none');
@@ -375,7 +387,7 @@
         gameClockInterval = setInterval(updateClock, 1000);
         
         // Resume Question Timer Loop
-        lastTimerUpdateTimestamp = performance.now(); // Reset delta base so we don't jump
+        lastTimerUpdateTimestamp = performance.now(); 
         if(isTimerEnabled) {
              requestAnimationFrame(timerLoop);
         }
@@ -451,19 +463,33 @@
             if (gameMode === 'keypad') {
                 handleKeypadInput(key);
             } else if (gameMode === 'choice') {
-                 // Try to match typed number to an option
+                 // FIXED LOGIC: Handle debounce for multi-digit typing
+                 if (keyboardDebounce) clearTimeout(keyboardDebounce);
+
                  currentInput += key;
                  if (currentInput.length > 3) currentInput = key;
                  
-                 const num = parseInt(currentInput);
                  const buttons = Array.from(answerOptionsEl.querySelectorAll('button'));
-                 const match = buttons.find(btn => parseInt(btn.textContent) === num);
-                 
-                 if (match) {
-                     match.click();
-                     currentInput = ''; 
+                 const opts = buttons.map(b => b.textContent);
+
+                 // Check if what we typed matches an option exactly
+                 const exactMatch = opts.find(o => o === currentInput);
+                 // Check if what we typed is the START of another option
+                 const isPrefix = opts.some(o => o.startsWith(currentInput) && o !== currentInput);
+
+                 if (exactMatch && !isPrefix) {
+                     const matchBtn = buttons.find(b => b.textContent === exactMatch);
+                     matchBtn.click();
+                     currentInput = '';
+                 } else if (exactMatch && isPrefix) {
+                     keyboardDebounce = setTimeout(() => {
+                         const matchBtn = buttons.find(b => b.textContent === exactMatch);
+                         if (matchBtn) matchBtn.click();
+                         currentInput = '';
+                     }, 500);
+                 } else if (!exactMatch && !isPrefix) {
+                     setTimeout(() => { currentInput = ''; }, 300);
                  }
-                 setTimeout(() => { if(!match) currentInput = ''; }, 1500);
             }
         } else if (key === 'Backspace') {
             if (gameMode === 'keypad') handleKeypadInput('backspace');
@@ -495,11 +521,9 @@
     }
 
     function initializeRound(problems, isFirstRound=false) {
-      // Sort logic depends on operation, but simple string sort key works for uniqueness
-      // We will sort purely for the progress bar consistency
-      allProblemsForRound = problems; // Random sort happened in generation usually, but let's keep it simple
+      allProblemsForRound = problems; 
       problemsToDo = [...allProblemsForRound];
-      shuffleArray(problemsToDo); // Shuffle execution order
+      shuffleArray(problemsToDo); 
       problemsGottenWrongInRound = [];
       
       document.body.classList.remove('game-is-paused');
@@ -542,7 +566,6 @@
     function timerLoop(timestamp) {
         if(!isTimerEnabled) return;
 
-        // Calculate delta time
         const delta = (timestamp - lastTimerUpdateTimestamp) / 1000; 
         lastTimerUpdateTimestamp = timestamp;
 
@@ -563,9 +586,8 @@
     function updateTimerBarVisual() {
         const percentage = (timerSecondsRemaining / timerSecondsTotal) * 100;
         timerBar.style.width = `${percentage}%`;
-        // Change color based on urgency?
-        if (percentage < 30) timerBar.style.backgroundColor = '#ef4444'; // Red
-        else timerBar.style.backgroundColor = '#22c55e'; // Green
+        if (percentage < 30) timerBar.style.backgroundColor = '#ef4444'; 
+        else timerBar.style.backgroundColor = '#22c55e';
     }
 
     function stopQuestionTimer() {
@@ -622,7 +644,6 @@
       }
 
       currentProblem = problemsToDo.pop(); 
-      // currentProblem object: { op: '+', num1: 5, num2: 5, answer: 10, display: "5 + 5" }
       
       correctAnswer = currentProblem.answer;
       activeProblemKey = currentProblem.display;
@@ -658,17 +679,15 @@
         if (Math.random() > 0.5) wrongAnswer = correctAnswer + offset;
         else wrongAnswer = correctAnswer - offset;
         
-        // ensure wrong answer is > 0 and not equal to correct answer
         if (wrongAnswer > 0 && wrongAnswer !== correctAnswer) {
           choices.add(wrongAnswer);
         }
         attempts++;
       }
       
-      // Fallback if strict range finding failed
       while (choices.size < 4) {
-         let r = Math.floor(Math.random() * 20) + 1; // 1-20
-         if(r !== correctAnswer) choices.add(r);
+          let r = Math.floor(Math.random() * 20) + 1; 
+          if(r !== correctAnswer) choices.add(r);
       }
 
       const shuffled = Array.from(choices).sort(() => Math.random() - 0.5);
@@ -752,7 +771,6 @@
         
         wrongAttempts[activeProblemKey] = (wrongAttempts[activeProblemKey] || 0) + 1;
         
-        // Check uniqueness before adding to wrong pile
         const alreadyInWrong = problemsGottenWrongInRound.some(p => p.display === currentProblem.display);
         if (!alreadyInWrong) problemsGottenWrongInRound.push(currentProblem);
         
@@ -818,9 +836,7 @@
 
     function updateProgressCount() {
       if (!allProblemsForRound.length) return;
-      // Total questions is initialProblemSet length or current round length
       const totalInRound = allProblemsForRound.length;
-      // Correct = Total - Remaining - Wrong
       const correctInRound = totalInRound - problemsToDo.length - problemsGottenWrongInRound.length;
       progressCountEl.textContent = `${correctInRound}/${totalInRound}`;
     }
@@ -916,6 +932,7 @@
       startGameBtn.disabled = true;
       setupErrorEl.textContent = '';
       
+      // Attempt to start audio on button click (good fallback)
       if(isSoundOn && Tone.context.state !== 'running') { await Tone.start(); }
 
       if (setupStep === 'operation') {
@@ -955,17 +972,11 @@
         
         goFullScreen();
         
-        // Generate Problems based on logic
-        // Max 20 Logic:
-        // Addition: sum <= 20
-        // Subtraction: first num <= 20
-        // NO ZEROS: Operands > 0, Result > 0
-        
         initialProblemSet = [];
         
         const createAdd = () => {
-             for(let i=1; i<=20; i++) { // Start 1
-                 for(let j=1; j<=20; j++) { // Start 1
+             for(let i=1; i<=20; i++) { 
+                 for(let j=1; j<=20; j++) { 
                      if(i+j <= 20) {
                          initialProblemSet.push({op:'+', num1:i, num2:j, answer:i+j, display:`${i} + ${j}`});
                      }
@@ -973,8 +984,8 @@
              }
         };
         const createSub = () => {
-             for(let i=2; i<=20; i++) { // Start 2 (since result must be >0)
-                 for(let j=1; j<i; j++) { // j < i ensures result > 0
+             for(let i=2; i<=20; i++) { 
+                 for(let j=1; j<i; j++) { 
                      initialProblemSet.push({op:'-', num1:i, num2:j, answer:i-j, display:`${i} - ${j}`});
                  }
              }
@@ -1067,6 +1078,10 @@
     window.onload = () => {
       createKeypad();
       showSetupScreen();
+      // Add Safari Global Audio Unlock Listeners
+      document.body.addEventListener('click', unlockAudio);
+      document.body.addEventListener('touchstart', unlockAudio);
+      document.body.addEventListener('keydown', unlockAudio);
     };
   </script>
 </body>
