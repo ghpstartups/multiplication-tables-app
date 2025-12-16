@@ -2,787 +2,655 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Time Mastery</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: 'Inter', sans-serif; touch-action: manipulation; overflow: hidden; position: fixed; width: 100%; height: 100%; margin: 0; padding-top: 1rem; }
+    /* Prevent scrolling and bouncing on mobile */
+    body { 
+        font-family: 'Inter', sans-serif; 
+        position: fixed; 
+        width: 100%; 
+        height: 100dvh; /* Dynamic viewport height */
+        overflow: hidden; 
+        background-color: #e0e7ff; 
+        touch-action: manipulation;
+    }
     .fredoka { font-family: 'Fredoka One', cursive; font-variant-numeric: tabular-nums; }
     
-    /* Card Flip Logic */
-    .card { transform-style: preserve-3d; transition: transform 0.6s, opacity 0.3s ease; }
+    /* 3D Card Flip */
+    .card-container { perspective: 1000px; }
+    .card { transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; width: 100%; height: 100%; }
     .card.is-flipped { transform: rotateY(180deg); }
-    .card-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .card-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; position: absolute; inset: 0; }
     .card-face-back { transform: rotateY(180deg); }
 
-    /* UI Animations */
-    .keypad-btn, .preset-btn { transition: transform 0.1s ease, background-color 0.2s ease, border-color 0.2s ease; }
-    .keypad-btn:active, .preset-btn:active { transform: scale(0.95); }
-    .modal-enter { animation: modal-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-    @keyframes modal-in { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+    /* Button Animations */
+    .btn-press { transition: transform 0.05s, background-color 0.1s; }
+    .btn-press:active { transform: scale(0.95); }
 
     /* Progress Dots */
-    .problem-dot { 
-        width: 20px; height: 20px; border-radius: 50%; margin: 2px;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: all 0.3s ease;
-    }
+    .problem-dot { width: 12px; height: 12px; border-radius: 50%; margin: 2px; transition: all 0.3s ease; }
     .dot-pending { background-color: #cbd5e1; }
     .dot-correct { background-color: #22c55e; box-shadow: 0 0 5px #22c55e; }
     .dot-wrong { background-color: #ef4444; }
-    .dot-current { border: 2px solid #3b82f6; background-color: white; transform: scale(1.2); }
+    .dot-current { border: 2px solid #4f46e5; background-color: white; transform: scale(1.3); }
 
-    /* Animations */
-    .is-paused-glow { animation: pulse-yellow-green 2s infinite ease-in-out; }
-    @keyframes pulse-yellow-green {
-      0%, 100% { background-color: #ca8a04; box-shadow: 0 0 12px rgba(202, 138, 4, 0.7); transform: scale(1.0); }
-      50% { background-color: #16a34a; box-shadow: 0 0 15px rgba(22, 163, 74, 0.8); transform: scale(1.05); }
-    }
-
-    .particle { position: fixed; border-radius: 50%; animation: explode 1s ease-out forwards; z-index: 100; }
-    @keyframes explode { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: var(--transform-to); } }
-    .tag-particle { position: fixed; border-radius: 50%; animation: tag-explode .6s ease-out forwards; z-index: 100; }
-    @keyframes tag-explode { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: var(--transform-to); } }
-
-    .scrollable-list { -webkit-overflow-scrolling: touch; }
-    
-    /* Layout */
-    @media (orientation: landscape) and (max-height: 500px) {
-      #setup-modal, #game-container, #win-modal, #practice-modal { display: none !important; }
-      #orientation-lock { display: flex; }
-    }
-    
-    #game-container { max-width: 400px; width: 100%; padding: 0 5px; height: 100%; }
-    .card-container { perspective: 1000px; flex-grow: 1; margin-bottom: 10px; min-height: 0; }
-    .card-face { padding: 4px; display: flex; flex-direction: column; }
-    
-    /* Input Styling */
+    /* Inputs */
     .time-input {
-        height: 45px; width: 60px; font-size: 1.8rem; border: 2px solid #cbd5e1; border-radius: .5rem;
-        display: flex; align-items: center; justify-content: center; background: #f1f5f9;
-        transition: border-color 0.2s;
+        height: 50px; width: 65px; font-size: 2rem; border: 3px solid #cbd5e1; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center; background: #fff; color: #333;
+        font-family: 'Fredoka One', cursive;
     }
-    .time-input.active-input { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
-    .colon-separator { font-size: 2rem; font-weight: bold; color: #334155; margin: 0 5px; }
+    .time-input.active-input { border-color: #4f46e5; background: #eef2ff; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2); }
 
+    /* Keypad */
     #keypad { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; height: 100%; }
-    .keypad-btn { font-size: 1.6rem; padding: 10px 0; border-radius: 12px; }
-    .preset-btn-selected { background: #22c55e !important; color:#fff !important; border-color:#16a34a !important; }
+    .keypad-btn { font-size: 1.5rem; border-radius: 12px; border-bottom-width: 4px; height: 100%; }
+    
+    /* Modals */
+    .modal-overlay { background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
+    
+    /* Timer */
+    .timer-bar { height: 6px; background-color: #ef4444; width: 100%; transition: width 0.1s linear; }
 
-    /* Timer Bar */
-    .timer-bar-container { position: absolute; top: 0; left: 0; width: 100%; height: 6px; overflow: hidden; border-top-left-radius: 1rem; border-top-right-radius: 1rem; background: #eee; }
-    .timer-bar { height: 100%; background-color: #ef4444; width: 100%; transform-origin: left; }
+    /* Canvas Responsiveness */
+    canvas { max-width: 100%; max-height: 100%; }
   </style>
 </head>
-<body class="bg-indigo-100 flex flex-col items-center justify-start p-1">
-  
-  <div id="orientation-lock" class="hidden fixed inset-0 bg-indigo-100 z-50 flex-col items-center justify-center text-center p-4">
-    <svg class="w-16 h-16 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" /></svg>
-    <h2 class="text-2xl fredoka text-indigo-800 mt-4">Please rotate your device</h2>
-    <p class="text-indigo-600 mt-2">This game is best played in portrait mode.</p>
-  </div>
+<body class="flex flex-col items-center justify-center">
 
-  <div id="setup-modal" class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-6 text-center max-w-sm w-full z-20 mt-10">
-    
-    <div id="mode-step" class="modal-enter">
-      <h2 class="text-3xl fredoka text-indigo-800 mb-2">Time Mastery</h2>
-      <p class="text-gray-500 mb-4">Choose your game mode</p>
-      <div class="flex flex-col gap-3 my-4">
-        <button id="mode-read" class="preset-btn py-4 px-4 rounded-xl border-2 border-indigo-200 bg-indigo-50 text-lg font-bold text-indigo-800 shadow-sm">
-            ⏰ Read the Clock
-            <span class="block text-xs font-normal text-gray-500 mt-1">Type the Hour and Minute</span>
-        </button>
-        <button id="mode-easy" class="preset-btn py-4 px-4 rounded-xl border-2 border-indigo-200 bg-indigo-50 text-lg font-bold text-indigo-800 shadow-sm">
-            ➕ Easy Math
-            <span class="block text-xs font-normal text-gray-500 mt-1">Difference within same hour</span>
-        </button>
-        <button id="mode-hard" class="preset-btn py-4 px-4 rounded-xl border-2 border-indigo-200 bg-indigo-50 text-lg font-bold text-indigo-800 shadow-sm">
-            🧠 Hard Math
-            <span class="block text-xs font-normal text-gray-500 mt-1">Difference across hours</span>
-        </button>
-      </div>
-    </div>
-    
-    <div id="settings-step" class="hidden modal-enter">
-      <h2 class="text-2xl fredoka text-indigo-800">Settings</h2>
+  <div id="setup-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm text-center border-4 border-indigo-100">
+      <h1 class="text-3xl fredoka text-indigo-600 mb-1">Time Mastery</h1>
+      <p class="text-gray-400 text-sm mb-6">Learn to read and calculate time!</p>
       
-      <div class="my-4 bg-gray-50 p-3 rounded-xl border border-gray-200">
-          <p class="text-gray-700 font-bold mb-2">Sound Effects</p>
-          <div class="flex justify-center gap-2">
-            <button id="sound-on-btn" class="flex-1 py-2 rounded-lg border-2 border-gray-300 bg-white">On 🔊</button>
-            <button id="sound-off-btn" class="flex-1 py-2 rounded-lg border-2 border-gray-300 bg-white">Off 🔇</button>
+      <div id="setup-content">
+          <div class="flex flex-col gap-3">
+              <button onclick="selectMode('read')" class="btn-press bg-indigo-50 border-2 border-indigo-200 p-4 rounded-xl text-left flex items-center gap-3 hover:bg-indigo-100">
+                  <div class="text-3xl">🕒</div>
+                  <div>
+                      <h3 class="font-bold text-indigo-900">Read Clock</h3>
+                      <p class="text-xs text-gray-500">What time is it?</p>
+                  </div>
+              </button>
+              <button onclick="selectMode('easy')" class="btn-press bg-indigo-50 border-2 border-indigo-200 p-4 rounded-xl text-left flex items-center gap-3 hover:bg-indigo-100">
+                  <div class="text-3xl">➕</div>
+                  <div>
+                      <h3 class="font-bold text-indigo-900">Easy Math</h3>
+                      <p class="text-xs text-gray-500">Difference (Same Hour)</p>
+                  </div>
+              </button>
+              <button onclick="selectMode('hard')" class="btn-press bg-indigo-50 border-2 border-indigo-200 p-4 rounded-xl text-left flex items-center gap-3 hover:bg-indigo-100">
+                  <div class="text-3xl">🧠</div>
+                  <div>
+                      <h3 class="font-bold text-indigo-900">Hard Math</h3>
+                      <p class="text-xs text-gray-500">Difference (Change Hour)</p>
+                  </div>
+              </button>
           </div>
       </div>
-      
-      <div class="my-4 bg-gray-50 p-3 rounded-xl border border-gray-200">
-        <p class="text-gray-700 font-bold mb-2">Timer per Question</p>
-        <div class="flex justify-center gap-2 mb-2">
-          <button id="timer-yes-btn" class="flex-1 py-2 rounded-lg border-2 border-gray-300 bg-white">Yes</button>
-          <button id="timer-no-btn" class="flex-1 py-2 rounded-lg border-2 border-gray-300 bg-white">No</button>
-        </div>
-        <div id="timer-input-container" class="hidden items-center justify-center gap-2 mt-2">
-           <input type="number" id="seconds-input" value="15" min="5" max="60" class="w-16 text-center text-xl border-2 border-gray-300 rounded-lg p-1" />
-           <span class="text-sm text-gray-500">seconds</span>
-        </div>
-      </div>
-
-      <button id="start-game-btn" class="w-full bg-indigo-600 text-white py-3 px-8 rounded-full text-2xl fredoka hover:bg-indigo-700 active:scale-95 transition-transform shadow-lg mt-2">Start Game</button>
     </div>
   </div>
 
-  <div id="game-container" class="w-full mx-auto flex flex-col hidden modal-enter h-full">
+  <div id="game-ui" class="hidden w-full h-full max-w-md flex flex-col relative bg-white md:rounded-3xl md:h-[95dvh] md:border-4 md:border-indigo-100 md:shadow-2xl overflow-hidden">
     
-    <div class="text-center flex-shrink-0 pt-1 pb-2">
-      <div class="flex items-center justify-between px-2 mb-2">
-         <button id="pause-btn" class="bg-yellow-500 text-white py-1 px-3 rounded-full text-sm font-bold shadow-md">Pause</button>
-         <div class="bg-white px-3 py-1 rounded-full shadow-sm border border-indigo-100">
-            <span id="clock" class="text-xl fredoka text-indigo-600 font-mono">00:00</span>
-         </div>
-         <button id="restart-btn" class="bg-gray-400 text-white py-1 px-3 rounded-full text-sm font-bold shadow-md">Restart</button>
-      </div>
-      
-      <div id="progress-container" class="flex justify-center flex-wrap gap-1 px-4 min-h-[24px]">
-          </div>
+    <div class="flex-none bg-indigo-50 p-2 border-b border-indigo-100">
+        <div class="flex justify-between items-center mb-1 px-2">
+            <button onclick="togglePause()" id="pause-btn" class="btn-press bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm">Pause</button>
+            <div class="text-2xl fredoka text-indigo-600 tracking-widest" id="game-clock">00:00</div>
+            <button onclick="location.reload()" class="btn-press bg-gray-200 text-gray-600 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm">Quit</button>
+        </div>
+        <div id="progress-dots" class="flex justify-center flex-wrap gap-1 px-4 h-4"></div>
     </div>
 
-    <div class="card-container w-full relative">
-        <div id="card" class="relative w-full h-full card">
-            
-            <div class="absolute w-full h-full card-face bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden border border-gray-200">
-                <div id="timer-bar-container" class="timer-bar-container hidden"><div id="timer-bar" class="timer-bar"></div></div>
+    <div class="w-full bg-gray-200 h-1.5"><div id="timer-bar" class="timer-bar"></div></div>
+
+    <div class="flex-grow relative p-2 overflow-hidden bg-white">
+        <div class="card-container w-full h-full">
+            <div id="game-card" class="card">
                 
-                <div id="visual-area" class="flex-grow flex flex-col items-center justify-center w-full py-2 relative">
-                    </div>
-
-                <div class="flex-none bg-indigo-50 w-full p-3 border-t border-indigo-100">
+                <div class="card-face bg-white flex flex-col">
                     
-                    <div id="input-row" class="flex justify-center items-center mb-3">
+                    <div id="visual-container" class="flex-grow flex flex-col items-center justify-center p-1 relative">
                         </div>
 
-                    <div id="keypad" class="w-full max-w-sm mx-auto h-48">
-                        </div>
+                    <div class="flex-none pt-2 pb-1">
+                        <div id="inputs-wrapper" class="flex justify-center items-center gap-2 mb-2 h-14">
+                            </div>
+                        
+                        <div id="keypad" class="h-44 w-full"></div>
+                    </div>
                 </div>
-            </div>
 
-            <div id="card-back-face" class="absolute w-full h-full inset-0 card-face card-face-back bg-indigo-500 rounded-2xl shadow-xl flex flex-col items-center justify-center p-4 text-center border-4 border-white">
-                <div id="result-icon" class="text-6xl mb-4">❌</div>
-                <h2 class="text-white text-3xl fredoka mb-2">Oops!</h2>
-                <div id="result-display" class="text-white text-xl bg-white/20 p-4 rounded-xl backdrop-blur-sm w-full"></div>
-                <p class="text-white/80 text-sm mt-4 animate-pulse">Next question coming up...</p>
+                <div class="card-face card-face-back bg-indigo-600 text-white flex flex-col items-center justify-center rounded-2xl">
+                    <div id="feedback-icon" class="text-7xl mb-2">❌</div>
+                    <div class="text-2xl font-bold mb-4">Correct Answer:</div>
+                    <div id="correct-answer-display" class="text-4xl fredoka bg-white/20 px-6 py-3 rounded-xl backdrop-blur-sm">
+                        --:--
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
   </div>
 
-  <div id="practice-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-    <div class="modal-enter bg-white rounded-3xl shadow-2xl p-8 text-center max-w-sm w-full relative border-4 border-orange-300">
-      <div id="practice-fireworks-container" class="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl"></div>
-      <div class="text-7xl mb-2">💪</div>
-      <h2 class="text-3xl fredoka text-orange-500">Practice Time!</h2>
-      <p class="text-gray-600 mt-2">Let's fix the <span id="wrong-count-display" class="font-bold text-red-500">0</span> mistakes you made to master this.</p>
-      <button id="start-practice-btn" class="mt-6 w-full bg-orange-500 text-white py-3 rounded-full text-xl fredoka hover:bg-orange-600 shadow-lg transform active:scale-95 transition-all">Start Practice</button>
-    </div>
-  </div>
-
-  <div id="win-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
-    <div class="modal-enter bg-white rounded-3xl shadow-2xl p-8 text-center max-w-sm w-full relative border-4 border-yellow-300">
-      <div id="fireworks-container" class="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl"></div>
-      <div class="text-8xl mb-2">🏆</div>
-      <h2 class="text-4xl fredoka text-yellow-500">You Did It!</h2>
-      <div id="win-message" class="text-gray-700 mt-4 text-lg bg-gray-50 p-4 rounded-xl"></div>
-      <div class="mt-6 flex flex-col gap-3">
-        <button id="win-play-again-btn" class="w-full py-3 rounded-full text-xl fredoka bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg">Play Again</button>
-        <button id="win-start-over-btn" class="w-full py-3 rounded-full text-xl fredoka bg-gray-200 text-gray-700 hover:bg-gray-300">Menu</button>
-      </div>
+  <div id="end-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-sm text-center relative overflow-hidden">
+        <div id="confetti-container" class="absolute inset-0 pointer-events-none"></div>
+        <div id="end-icon" class="text-8xl mb-2">🏆</div>
+        <h2 id="end-title" class="text-4xl fredoka text-indigo-600 mb-2">Finished!</h2>
+        <p id="end-message" class="text-gray-500 mb-6">Great job!</p>
+        <button id="end-action-btn" class="btn-press w-full bg-indigo-600 text-white py-4 rounded-xl text-xl font-bold shadow-lg shadow-indigo-200">
+            Play Again
+        </button>
     </div>
   </div>
 
   <script>
-    // --- GLOBAL STATE ---
+    // --- STATE & CONFIG ---
     const CONFIG = {
-        questionsPerRound: 10,
-        clockRadius: 65,
-        mathClockRadius: 55
+        questionsTotal: 10,
+        timerSeconds: 15,
     };
 
     const STATE = {
-        mode: null, // 'read', 'easy', 'hard'
-        isSoundOn: true,
-        isTimerEnabled: false,
-        timerTotal: 15,
-        timerRemaining: 15,
-        
-        problems: [], // Array of objects {h1, m1, h2, m2, answer}
-        currentProblemIndex: 0,
-        wrongProblems: [], // List of problems to redo
-        
-        inputs: [], // Array of input element references [input1, input2?]
-        focusedInputIndex: 0,
+        mode: null, 
+        problems: [], 
+        currentIdx: 0,
+        wrongList: [],
+        inputs: [],
+        focusedInput: 0,
         
         isPaused: false,
+        timerVal: 0,
         startTime: 0,
-        elapsedPauseTime: 0,
-        clockInterval: null,
-        timerFrame: null,
-        lastFrameTime: 0,
+        elapsed: 0,
+        clockInt: null,
+        animFrame: null,
         
-        attempts: 0
+        isPractice: false
     };
 
-    // --- DOM ELEMENTS ---
-    const els = {
-        setupModal: document.getElementById('setup-modal'),
-        modeStep: document.getElementById('mode-step'),
-        settingsStep: document.getElementById('settings-step'),
-        gameContainer: document.getElementById('game-container'),
-        winModal: document.getElementById('win-modal'),
-        practiceModal: document.getElementById('practice-modal'),
-        
-        visualArea: document.getElementById('visual-area'),
-        inputRow: document.getElementById('input-row'),
-        keypad: document.getElementById('keypad'),
-        progressContainer: document.getElementById('progress-container'),
-        
-        card: document.getElementById('card'),
-        cardBack: document.getElementById('card-back-face'),
-        resultDisplay: document.getElementById('result-display'),
-        
-        timerBar: document.getElementById('timer-bar'),
-        timerContainer: document.getElementById('timer-bar-container'),
-        gameClock: document.getElementById('clock'),
-        
-        setupError: document.getElementById('setup-error')
-    };
-
-    // --- AUDIO (TONE.JS) ---
+    // --- AUDIO SYSTEM (Tone.js) ---
     const audio = {
-        correct: new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 } }).toDestination(),
-        incorrect: new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.5 }, volume: -10 }).toDestination(),
-        fanfare: new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'fatsawtooth' }, envelope: { attack: 0.01, decay: 0.4, sustain: 0.2, release: 0.4 } }).toDestination()
+        synth: new Tone.Synth().toDestination(),
+        badSynth: new Tone.Synth({ oscillator: { type: "sawtooth" } }).toDestination(),
+        poly: new Tone.PolySynth().toDestination()
     };
+    
+    let audioStarted = false;
 
-    async function playSound(type) {
-        if (!STATE.isSoundOn) return;
-        if (Tone.context.state !== 'running') await Tone.start();
-        
+    async function initAudio() {
+        if(!audioStarted) {
+            await Tone.start();
+            audioStarted = true;
+            // Set volumes
+            audio.synth.volume.value = -5;
+            audio.badSynth.volume.value = -5;
+            audio.poly.volume.value = -8;
+        }
+    }
+
+    function playSound(type) {
+        if(!audioStarted) return;
+        const now = Tone.now();
         switch(type) {
-            case 'correct':
-                audio.correct.triggerAttackRelease('C5', '8n'); 
-                setTimeout(() => audio.correct.triggerAttackRelease('G5', '8n'), 100);
+            case 'click': audio.synth.triggerAttackRelease("C5", "32n", now); break;
+            case 'correct': 
+                audio.poly.triggerAttackRelease(["C5", "E5", "G5"], "16n", now); 
+                audio.poly.triggerAttackRelease(["E5", "G5", "C6"], "8n", now + 0.1);
                 break;
-            case 'incorrect':
-                audio.incorrect.triggerAttackRelease('F#3', '8n');
+            case 'wrong': 
+                audio.badSynth.triggerAttackRelease("A2", "8n", now); 
+                audio.badSynth.triggerAttackRelease("F2", "8n", now + 0.15);
                 break;
-            case 'fanfare':
-                const now = Tone.now();
-                audio.fanfare.triggerAttackRelease(['C5','E5','G5'], '8n', now);
-                audio.fanfare.triggerAttackRelease(['E5','G5','C6'], '8n', now + 0.2);
-                audio.fanfare.triggerAttackRelease(['G5','C6','E6'], '4n', now + 0.4);
+            case 'win':
+                audio.poly.triggerAttackRelease(["C4","E4","G4"], "8n", now);
+                audio.poly.triggerAttackRelease(["D4","F4","A4"], "8n", now+0.1);
+                audio.poly.triggerAttackRelease(["E4","G4","B4"], "8n", now+0.2);
+                audio.poly.triggerAttackRelease(["F4","A4","C5"], "2n", now+0.3);
                 break;
         }
     }
 
-    // --- CLOCK DRAWING LOGIC ---
-    function drawClock(ctx, radius, h, m, label = null) {
-        const cx = radius + 5;
-        const cy = radius + 15;
-        
-        ctx.clearRect(0,0, ctx.canvas.width, ctx.canvas.height);
-        
-        // Face
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
-        ctx.fillStyle = 'white';
-        ctx.fill();
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        
-        // Ticks & Numbers
-        ctx.fillStyle = '#333';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = `bold ${radius * 0.2}px Inter`;
-        
-        for(let i=1; i<=12; i++) {
-            const angle = (i * 30) * Math.PI / 180;
-            // Numbers
-            const numR = radius * 0.8;
-            ctx.fillText(i, cx + Math.sin(angle)*numR, cy - Math.cos(angle)*numR);
-            
-            // Ticks
-            const tickR = radius * 0.95;
-            ctx.beginPath();
-            ctx.arc(cx + Math.sin(angle)*tickR, cy - Math.cos(angle)*tickR, 2, 0, 2*Math.PI);
-            ctx.fill();
-        }
-
-        // Hands
-        // Min (6 deg per min)
-        const minAngle = (m * 6) * Math.PI / 180;
-        const minLen = radius * 0.75;
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(cx + Math.sin(minAngle)*minLen, cy - Math.cos(minAngle)*minLen);
-        ctx.strokeStyle = '#333';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        // Hour (30 deg per hour + 0.5 deg per min)
-        const hrAngle = ((h % 12) * 30 + m * 0.5) * Math.PI / 180;
-        const hrLen = radius * 0.5;
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(cx + Math.sin(hrAngle)*hrLen, cy - Math.cos(hrAngle)*hrLen);
-        ctx.strokeStyle = '#4f46e5'; // Indigo color for hour
-        ctx.lineWidth = 5;
-        ctx.stroke();
-        
-        // Center Pin
-        ctx.beginPath();
-        ctx.arc(cx, cy, 4, 0, 2*Math.PI);
-        ctx.fillStyle = '#ef4444';
-        ctx.fill();
-
-        // Optional Label
-        if(label) {
-            ctx.fillStyle = '#6b7280';
-            ctx.font = '12px Inter';
-            ctx.fillText(label, cx, cy + radius + 15);
-        }
-    }
-
-    // --- GAME LOGIC ---
-
-    function generateProblemList(count, mode) {
-        const list = [];
+    // --- GENERATORS ---
+    function generateProblems(mode, count) {
+        let arr = [];
         for(let i=0; i<count; i++) {
-            let p = {};
-            if (mode === 'read') {
-                p.h1 = Math.floor(Math.random() * 12) + 1;
-                p.m1 = Math.floor(Math.random() * 60);
-                p.ans = [p.h1, p.m1]; // Array for 2 inputs
+            let p = { mode: mode };
+            if(mode === 'read') {
+                p.h1 = rInt(1, 12);
+                p.m1 = rInt(0, 59);
+                p.answer = [p.h1, p.m1];
             } else if (mode === 'easy') {
-                p.h1 = Math.floor(Math.random() * 12) + 1;
-                p.m1 = Math.floor(Math.random() * 45); // Limit so we can add
-                const diff = Math.floor(Math.random() * (55 - p.m1)) + 5; // at least 5 min diff
-                p.m2 = p.m1 + diff;
+                p.h1 = rInt(1, 12);
+                p.m1 = rInt(0, 45); 
+                p.diff = rInt(5, 59 - p.m1); // Ensure stays in hour
                 p.h2 = p.h1;
-                p.ans = [diff];
-            } else if (mode === 'hard') {
-                p.h1 = Math.floor(Math.random() * 12) + 1;
-                p.m1 = Math.floor(Math.random() * 25) + 30; // Start late in hour
-                const diff = Math.floor(Math.random() * 45) + 15; // 15 to 60 mins diff
-                let totalM = p.m1 + diff;
-                p.h2 = p.h1 + Math.floor(totalM / 60);
-                if(p.h2 > 12) p.h2 -= 12;
-                p.m2 = totalM % 60;
-                p.ans = [diff];
+                p.m2 = p.m1 + p.diff;
+                p.answer = [p.diff];
+            } else { // hard
+                p.h1 = rInt(1, 12);
+                p.m1 = rInt(30, 55); 
+                const diff = rInt(60 - p.m1 + 5, 50); // Cross hour
+                let total = p.m1 + diff;
+                p.h2 = p.h1 + 1; 
+                if(p.h2 > 12) p.h2 = 1;
+                p.m2 = total - 60;
+                p.answer = [diff];
             }
-            list.push(p);
+            arr.push(p);
         }
-        return list;
+        return arr;
+    }
+    function rInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+    // --- GAME CONTROL ---
+    async function selectMode(mode) {
+        await initAudio();
+        STATE.mode = mode;
+        STATE.isPractice = false;
+        STATE.problems = generateProblems(mode, CONFIG.questionsTotal);
+        startGame();
     }
 
-    function startGame(isRetry = false) {
-        if (!isRetry) {
-            STATE.problems = generateProblemList(CONFIG.questionsPerRound, STATE.mode);
-            STATE.currentProblemIndex = 0;
-            STATE.wrongProblems = [];
-            STATE.attempts = 0;
-            STATE.startTime = Date.now();
-        } else {
-            // Practice mode: Use the wrong problems
-            STATE.problems = [...STATE.wrongProblems];
-            STATE.wrongProblems = []; // Reset for this practice run
-            STATE.currentProblemIndex = 0;
-        }
-
-        STATE.isPaused = false;
-        STATE.elapsedPauseTime = 0;
+    function startGame() {
+        STATE.currentIdx = 0;
+        STATE.wrongList = [];
+        STATE.startTime = Date.now();
+        STATE.elapsed = 0;
         
-        renderProgressDots();
-        loadProblem();
+        document.getElementById('setup-modal').classList.add('hidden');
+        document.getElementById('end-modal').classList.add('hidden');
+        document.getElementById('game-ui').classList.remove('hidden');
         
-        // Start Clock
-        if(STATE.clockInterval) clearInterval(STATE.clockInterval);
-        STATE.clockInterval = setInterval(() => {
-            if(STATE.isPaused) return;
-            const elapsed = Date.now() - STATE.startTime - STATE.elapsedPauseTime;
-            const min = String(Math.floor(elapsed/60000)).padStart(2,'0');
-            const sec = String(Math.floor((elapsed%60000)/1000)).padStart(2,'0');
-            els.gameClock.textContent = `${min}:${sec}`;
-        }, 1000);
-
-        // UI Transitions
-        els.setupModal.classList.add('hidden');
-        els.winModal.classList.add('hidden');
-        els.practiceModal.classList.add('hidden');
-        els.gameContainer.classList.remove('hidden');
+        renderDots();
+        initKeypad();
+        loadLevel();
+        startClock();
     }
 
-    function loadProblem() {
-        const p = STATE.problems[STATE.currentProblemIndex];
-        
-        // 1. Setup Visual Area
-        els.visualArea.innerHTML = '';
-        
+    function loadLevel() {
+        const p = STATE.problems[STATE.currentIdx];
+        const container = document.getElementById('visual-container');
+        container.innerHTML = ''; // clear
+
+        // 1. Draw Visuals
         if (STATE.mode === 'read') {
-            const cvs = document.createElement('canvas');
-            const r = CONFIG.clockRadius + 20; // Bigger for single view
-            cvs.width = (r * 2) + 10; cvs.height = (r * 2) + 30;
-            els.visualArea.appendChild(cvs);
-            drawClock(cvs.getContext('2d'), r, p.h1, p.m1);
+            const cvs = createClockCanvas(110, p.h1, p.m1); // Max size
+            container.appendChild(cvs);
         } else {
-            // Math modes - Vertical Layout
-            const r = CONFIG.mathClockRadius;
-            const container = document.createElement('div');
-            container.className = "flex flex-col items-center gap-2";
+            // Math modes: Vertical Layout
+            const wrap = document.createElement('div');
+            wrap.className = "flex flex-col items-center justify-center gap-1 h-full";
             
-            // Clock 1
-            const cvs1 = document.createElement('canvas');
-            cvs1.width = (r*2)+10; cvs1.height = (r*2)+30;
-            drawClock(cvs1.getContext('2d'), r, p.h1, p.m1, "Start");
+            // Top Clock
+            wrap.appendChild(createClockCanvas(70, p.h1, p.m1));
             
             // Arrow
             const arrow = document.createElement('div');
             arrow.innerHTML = '⬇️'; 
-            arrow.className = "text-2xl animate-bounce";
-
-            // Clock 2
-            const cvs2 = document.createElement('canvas');
-            cvs2.width = (r*2)+10; cvs2.height = (r*2)+30;
-            drawClock(cvs2.getContext('2d'), r, p.h2, p.m2, "End");
-
-            container.appendChild(cvs1);
-            container.appendChild(arrow);
-            container.appendChild(cvs2);
-            els.visualArea.appendChild(container);
+            arrow.className = "text-2xl animate-bounce leading-none";
+            wrap.appendChild(arrow);
+            
+            // Bottom Clock
+            wrap.appendChild(createClockCanvas(70, p.h2, p.m2));
+            
+            container.appendChild(wrap);
         }
 
         // 2. Setup Inputs
-        els.inputRow.innerHTML = '';
-        STATE.inputs = [];
+        setupInputs(p);
         
-        if (STATE.mode === 'read') {
-            // Hour Input
-            const iH = createInput();
-            els.inputRow.appendChild(iH);
-            STATE.inputs.push(iH);
-            
-            // Colon
-            const sep = document.createElement('span');
-            sep.textContent = ':';
-            sep.className = 'colon-separator';
-            els.inputRow.appendChild(sep);
-            
-            // Min Input
-            const iM = createInput();
-            els.inputRow.appendChild(iM);
-            STATE.inputs.push(iM);
-        } else {
-            // Math - Single Input
-            const iD = createInput();
-            els.inputRow.appendChild(iD);
-            STATE.inputs.push(iD);
-            
-            const label = document.createElement('span');
-            label.textContent = 'mins';
-            label.className = 'text-indigo-600 font-bold ml-2';
-            els.inputRow.appendChild(label);
-        }
-
-        // Focus first input
-        switchFocus(0);
-
         // 3. Reset Timer
-        if (STATE.isTimerEnabled) startTimer();
-    }
-
-    function createInput() {
-        const div = document.createElement('div');
-        div.className = 'time-input';
-        div.onclick = (e) => {
-            const idx = STATE.inputs.indexOf(e.target);
-            if(idx !== -1) switchFocus(idx);
-        };
-        return div;
-    }
-
-    function switchFocus(idx) {
-        STATE.inputs.forEach(i => i.classList.remove('active-input'));
-        STATE.inputs[idx].classList.add('active-input');
-        STATE.focusedInputIndex = idx;
-    }
-
-    // --- KEYPAD LOGIC ---
-    function initKeypad() {
-        els.keypad.innerHTML = '';
-        const keys = ['1','2','3','4','5','6','7','8','9','⌫','0','✓'];
-        keys.forEach(k => {
-            const btn = document.createElement('button');
-            btn.textContent = k;
-            btn.className = "keypad-btn fredoka bg-white border-b-4 border-indigo-200 text-indigo-600 shadow-sm active:border-b-0 active:translate-y-1";
-            
-            if (k === '✓') {
-                btn.className += " bg-green-500 text-white border-green-700";
-                btn.onclick = checkAnswer;
-            } else if (k === '⌫') {
-                btn.className += " bg-gray-200 text-gray-600 border-gray-400";
-                btn.onclick = () => handleInput('back');
-            } else {
-                btn.onclick = () => handleInput(k);
-            }
-            els.keypad.appendChild(btn);
+        resetTimer();
+        
+        // 4. Update Dot
+        document.querySelectorAll('.problem-dot').forEach((d,i) => {
+            if(i === STATE.currentIdx) d.classList.add('dot-current');
+            else d.classList.remove('dot-current');
         });
     }
 
-    function handleInput(val) {
-        if(els.card.classList.contains('is-flipped')) return;
+    function setupInputs(p) {
+        const wrap = document.getElementById('inputs-wrapper');
+        wrap.innerHTML = '';
+        STATE.inputs = [];
+        STATE.focusedInput = 0;
 
-        const currentEl = STATE.inputs[STATE.focusedInputIndex];
-        let text = currentEl.textContent;
-
-        if (val === 'back') {
-            text = text.slice(0, -1);
-        } else {
-            if (text.length < 2) text += val;
+        if (STATE.mode === 'read') {
+            // Hour
+            const iH = createInputEl();
+            wrap.appendChild(iH);
+            STATE.inputs.push(iH);
             
-            // Auto-advance logic for Read Mode
-            if (text.length === 2 && STATE.mode === 'read' && STATE.focusedInputIndex === 0) {
-                setTimeout(() => switchFocus(1), 100);
-            }
+            const sep = document.createElement('div');
+            sep.innerHTML = ':'; sep.className = 'text-4xl text-gray-400 font-bold pb-2';
+            wrap.appendChild(sep);
+            
+            // Min
+            const iM = createInputEl();
+            wrap.appendChild(iM);
+            STATE.inputs.push(iM);
+        } else {
+            // Diff
+            const i = createInputEl();
+            i.style.width = '100px';
+            wrap.appendChild(i);
+            STATE.inputs.push(i);
+            
+            const lbl = document.createElement('div');
+            lbl.innerText = 'mins'; lbl.className = 'text-indigo-400 font-bold ml-1';
+            wrap.appendChild(lbl);
         }
-        currentEl.textContent = text;
+        highlightInput();
     }
 
-    // --- CHECK ANSWER ---
-    function checkAnswer() {
-        // Collect User Answers
-        const userVals = STATE.inputs.map(i => parseInt(i.textContent));
-        const p = STATE.problems[STATE.currentProblemIndex];
-        
-        // Validate
-        if (userVals.some(v => isNaN(v))) return; // Incomplete
+    function createInputEl() {
+        const d = document.createElement('div');
+        d.className = 'time-input';
+        d.onclick = (e) => {
+            const idx = STATE.inputs.indexOf(e.target);
+            if(idx > -1) { STATE.focusedInput = idx; highlightInput(); }
+        };
+        return d;
+    }
 
-        let correct = true;
-        if (STATE.mode === 'read') {
-            if (userVals[0] !== p.ans[0] || userVals[1] !== p.ans[1]) correct = false;
-        } else {
-            if (userVals[0] !== p.ans[0]) correct = false;
+    function highlightInput() {
+        STATE.inputs.forEach((el, i) => {
+            if(i === STATE.focusedInput) el.classList.add('active-input');
+            else el.classList.remove('active-input');
+        });
+    }
+
+    // --- CANVAS DRAWING ---
+    function createClockCanvas(radius, h, m) {
+        const canvas = document.createElement('canvas');
+        const size = radius * 2 + 10;
+        // High DPI scaling
+        canvas.width = size * 2; 
+        canvas.height = size * 2;
+        canvas.style.width = size + 'px';
+        canvas.style.height = size + 'px';
+        
+        const ctx = canvas.getContext('2d');
+        ctx.scale(2, 2); // Scale for retina
+        
+        const cx = size/2;
+        const cy = size/2;
+
+        // Face
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI*2);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#3730a3'; // Indigo-800
+        ctx.stroke();
+
+        // Ticks (Minutes)
+        for(let i=0; i<60; i++) {
+            const ang = (i*6) * Math.PI/180;
+            const isHour = i%5 === 0;
+            const len = isHour ? 10 : 5;
+            const width = isHour ? 3 : 1;
+            
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.sin(ang)*(radius-len), cy - Math.cos(ang)*(radius-len));
+            ctx.lineTo(cx + Math.sin(ang)*(radius-2), cy - Math.cos(ang)*(radius-2));
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = width;
+            ctx.stroke();
         }
 
-        STATE.attempts++;
-        updateDot(STATE.currentProblemIndex, correct);
+        // Numbers
+        ctx.fillStyle = '#1e1b4b';
+        ctx.font = `bold ${radius*0.22}px 'Fredoka One'`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        for(let i=1; i<=12; i++) {
+            const ang = (i*30) * Math.PI/180;
+            const rNum = radius * 0.75;
+            ctx.fillText(i, cx + Math.sin(ang)*rNum, cy - Math.cos(ang)*rNum);
+        }
 
-        if (correct) {
-            playSound('correct');
-            triggerConfetti(els.inputRow);
-            setTimeout(nextQuestion, 1000);
-        } else {
-            playSound('incorrect');
-            STATE.wrongProblems.push(p);
-            
-            // Show result
-            let correctText = "";
-            if(STATE.mode === 'read') {
-                correctText = `${String(p.h1).padStart(2,'0')}:${String(p.m1).padStart(2,'0')}`;
+        // Hands
+        // Minute
+        const mAng = (m*6) * Math.PI/180;
+        drawHand(ctx, cx, cy, mAng, radius*0.85, 4, '#374151');
+        // Hour
+        const hAng = ((h%12)*30 + m*0.5) * Math.PI/180;
+        drawHand(ctx, cx, cy, hAng, radius*0.55, 6, '#4f46e5');
+
+        // Pin
+        ctx.beginPath();
+        ctx.arc(cx, cy, 5, 0, Math.PI*2);
+        ctx.fillStyle = '#ef4444';
+        ctx.fill();
+
+        return canvas;
+    }
+
+    function drawHand(ctx, cx, cy, ang, len, width, color) {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.sin(ang)*len, cy - Math.cos(ang)*len);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+    }
+
+    // --- KEYPAD ---
+    function initKeypad() {
+        const k = document.getElementById('keypad');
+        k.innerHTML = '';
+        const keys = ['1','2','3','4','5','6','7','8','9','⌫','0','✓'];
+        keys.forEach(key => {
+            const b = document.createElement('button');
+            b.className = "keypad-btn bg-white text-indigo-600 font-bold border-indigo-200 border shadow-sm active:bg-indigo-50";
+            b.innerText = key;
+            if(key === '✓') {
+                b.className = "keypad-btn bg-green-500 text-white border-green-600 active:bg-green-600";
+                b.onclick = submitAnswer;
+            } else if (key === '⌫') {
+                b.className = "keypad-btn bg-gray-200 text-gray-500 border-gray-300 active:bg-gray-300";
+                b.onclick = backspace;
             } else {
-                correctText = `${p.ans[0]} minutes`;
+                b.onclick = () => typeNum(key);
             }
+            k.appendChild(b);
+        });
+    }
+
+    function typeNum(n) {
+        playSound('click');
+        const inp = STATE.inputs[STATE.focusedInput];
+        if(inp.innerText.length < 2) {
+            inp.innerText += n;
+            // Auto advance
+            if(inp.innerText.length === 2 && STATE.mode === 'read' && STATE.focusedInput === 0) {
+                STATE.focusedInput = 1; highlightInput();
+            }
+        }
+    }
+
+    function backspace() {
+        playSound('click');
+        const inp = STATE.inputs[STATE.focusedInput];
+        inp.innerText = inp.innerText.slice(0, -1);
+    }
+
+    // --- GAME LOOP LOGIC ---
+    function submitAnswer() {
+        // Collect answer
+        const vals = STATE.inputs.map(el => parseInt(el.innerText));
+        if(vals.some(isNaN)) return; // Empty inputs
+
+        const p = STATE.problems[STATE.currentIdx];
+        let correct = true;
+        
+        // Check logic
+        if(STATE.mode === 'read') {
+            if(vals[0] !== p.answer[0] || vals[1] !== p.answer[1]) correct = false;
+        } else {
+            if(vals[0] !== p.answer[0]) correct = false;
+        }
+
+        // Result UI
+        const dot = document.getElementById(`dot-${STATE.currentIdx}`);
+        if(correct) {
+            playSound('correct');
+            dot.classList.remove('dot-pending', 'dot-current');
+            dot.classList.add('dot-correct');
+            setTimeout(nextLevel, 800);
+        } else {
+            playSound('wrong');
+            dot.classList.remove('dot-pending', 'dot-current');
+            dot.classList.add('dot-wrong');
+            STATE.wrongList.push(p); // Add to practice
             
-            els.resultDisplay.innerHTML = `Correct Answer:<br><span class="text-3xl font-bold">${correctText}</span>`;
-            els.card.classList.add('is-flipped');
-            
+            // Show Card Flip
+            const display = document.getElementById('correct-answer-display');
+            if(STATE.mode === 'read') display.innerText = `${p.h1}:${String(p.m1).padStart(2,'0')}`;
+            else display.innerText = `${p.answer[0]} mins`;
+
+            document.getElementById('game-card').classList.add('is-flipped');
             setTimeout(() => {
-                els.card.classList.remove('is-flipped');
-                setTimeout(nextQuestion, 300);
+                document.getElementById('game-card').classList.remove('is-flipped');
+                setTimeout(nextLevel, 300);
             }, 2500);
         }
     }
 
-    function nextQuestion() {
-        STATE.currentProblemIndex++;
-        if (STATE.currentProblemIndex >= STATE.problems.length) {
-            endRound();
+    function nextLevel() {
+        STATE.currentIdx++;
+        if(STATE.currentIdx >= STATE.problems.length) {
+            endGame();
         } else {
-            loadProblem();
-            // Scroll progress
-            const dot = document.getElementById(`dot-${STATE.currentProblemIndex}`);
-            dot.classList.add('dot-current');
-            if(STATE.currentProblemIndex > 0) {
-                 document.getElementById(`dot-${STATE.currentProblemIndex-1}`).classList.remove('dot-current');
-            }
+            loadLevel();
         }
     }
 
-    function endRound() {
-        clearInterval(STATE.clockInterval);
-        if(STATE.timerFrame) cancelAnimationFrame(STATE.timerFrame);
+    function endGame() {
+        stopTimer();
+        clearInterval(STATE.clockInt);
         
-        if (STATE.wrongProblems.length > 0) {
-            // Practice Needed
-            playSound('fanfare'); // Minor fanfare
-            document.getElementById('wrong-count-display').textContent = STATE.wrongProblems.length;
-            els.practiceModal.classList.remove('hidden');
+        const modal = document.getElementById('end-modal');
+        const title = document.getElementById('end-title');
+        const msg = document.getElementById('end-message');
+        const btn = document.getElementById('end-action-btn');
+        const icon = document.getElementById('end-icon');
+
+        modal.classList.remove('hidden');
+
+        if(STATE.wrongList.length === 0) {
+            // Perfect
+            playSound('win');
+            icon.innerText = "🏆";
+            title.innerText = "Perfect!";
+            msg.innerText = "You got them all right!";
+            btn.innerText = "Play Again";
+            btn.onclick = () => { selectMode(STATE.mode); }; // Restart same mode
         } else {
-            // Full Win
-            playSound('fanfare');
-            triggerFireworks();
-            
-            // Calculate Stats
-            const elapsed = Date.now() - STATE.startTime;
-            const timeStr = els.gameClock.textContent;
-            els.winModal.querySelector('#win-message').innerHTML = `
-                <p>Time: <b>${timeStr}</b></p>
-                <p>Accuracy: <b>${Math.round((STATE.problems.length / STATE.attempts)*100)}%</b></p>
-            `;
-            els.winModal.classList.remove('hidden');
+            // Needs Practice
+            playSound('wrong'); // sound effect prompt
+            icon.innerText = "💪";
+            title.innerText = "Keep Going!";
+            msg.innerText = `You missed ${STATE.wrongList.length} questions. Let's fix them!`;
+            btn.innerText = "Practice Mistakes";
+            btn.onclick = startPractice;
         }
     }
 
-    // --- TIMER ---
-    function startTimer() {
-        STATE.timerRemaining = STATE.timerTotal;
-        STATE.lastFrameTime = performance.now();
-        els.timerContainer.classList.remove('hidden');
-        if(STATE.timerFrame) cancelAnimationFrame(STATE.timerFrame);
-        STATE.timerFrame = requestAnimationFrame(timerLoop);
+    function startPractice() {
+        STATE.isPractice = true;
+        STATE.problems = [...STATE.wrongList];
+        STATE.wrongList = []; // clear for new round
+        startGame(); // re-runs with new problem set
     }
 
-    function timerLoop(now) {
-        if(STATE.isPaused || els.card.classList.contains('is-flipped')) {
-            STATE.lastFrameTime = now;
-            STATE.timerFrame = requestAnimationFrame(timerLoop);
-            return;
-        }
-
-        const delta = (now - STATE.lastFrameTime) / 1000;
-        STATE.lastFrameTime = now;
-        STATE.timerRemaining -= delta;
-
-        const pct = (STATE.timerRemaining / STATE.timerTotal) * 100;
-        els.timerBar.style.width = `${Math.max(0, pct)}%`;
-        els.timerBar.style.backgroundColor = pct < 30 ? '#ef4444' : '#22c55e';
-
-        if (STATE.timerRemaining <= 0) {
-            // Time out logic -> Mark wrong immediately
-            STATE.timerRemaining = 0;
-            // Fake a wrong input to trigger logic
-            const p = STATE.problems[STATE.currentProblemIndex];
-            if(STATE.mode === 'read') { STATE.inputs[0].textContent='99'; STATE.inputs[1].textContent='99'; }
-            else { STATE.inputs[0].textContent = '999'; }
-            checkAnswer();
-        } else {
-            STATE.timerFrame = requestAnimationFrame(timerLoop);
-        }
+    // --- TIMERS ---
+    function startClock() {
+        if(STATE.clockInt) clearInterval(STATE.clockInt);
+        STATE.clockInt = setInterval(() => {
+            if(!STATE.isPaused) {
+                STATE.elapsed += 1000;
+                const m = Math.floor(STATE.elapsed / 60000);
+                const s = Math.floor((STATE.elapsed % 60000) / 1000);
+                document.getElementById('game-clock').innerText = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            }
+        }, 1000);
     }
 
-    // --- PROGRESS UI ---
-    function renderProgressDots() {
-        els.progressContainer.innerHTML = '';
-        STATE.problems.forEach((_, i) => {
-            const d = document.createElement('div');
-            d.id = `dot-${i}`;
-            d.className = 'problem-dot dot-pending';
-            if(i===0) d.classList.add('dot-current');
-            els.progressContainer.appendChild(d);
-        });
+    function resetTimer() {
+        STATE.timerVal = CONFIG.timerSeconds;
+        animateTimer();
     }
-
-    function updateDot(idx, isCorrect) {
-        const dot = document.getElementById(`dot-${idx}`);
-        dot.className = `problem-dot ${isCorrect ? 'dot-correct' : 'dot-wrong'}`;
-    }
-
-    // --- VISUAL FX ---
-    function triggerConfetti(target) {
-        const rect = target.getBoundingClientRect();
-        const colors = ['#4f46e5', '#22c55e', '#eab308', '#ec4899'];
-        for(let i=0; i<15; i++) {
-            const p = document.createElement('div');
-            p.className = 'tag-particle';
-            p.style.backgroundColor = colors[Math.floor(Math.random()*colors.length)];
-            p.style.left = (rect.left + rect.width/2) + 'px';
-            p.style.top = (rect.top + rect.height/2) + 'px';
-            p.style.width = (Math.random()*8+4)+'px'; p.style.height = p.style.width;
-            p.style.setProperty('--transform-to', `translate(${Math.random()*100-50}px, ${Math.random()*100-50}px) scale(0)`);
-            document.body.appendChild(p);
-            setTimeout(() => p.remove(), 600);
-        }
-    }
-
-    function triggerFireworks() {
-        const c = document.getElementById('fireworks-container');
-        c.innerHTML='';
-        for(let i=0; i<40; i++){
-            const p=document.createElement('div'); p.className='particle';
-            const s=Math.floor(Math.random()*10+5)+'px'; 
-            p.style.width=s; p.style.height=s;
-            p.style.backgroundColor=['#ff0','#f00','#0f0','#00f'][Math.floor(Math.random()*4)];
-            p.style.left='50%'; p.style.top='50%'; 
-            p.style.setProperty('--transform-to',`translate(${Math.random()*300-150}px, ${Math.random()*300-150}px) scale(0)`);
-            c.appendChild(p);
-        }
-    }
-
-    // --- EVENT BINDING ---
-    document.getElementById('mode-read').onclick = () => { STATE.mode = 'read'; showSettings(); };
-    document.getElementById('mode-easy').onclick = () => { STATE.mode = 'easy'; showSettings(); };
-    document.getElementById('mode-hard').onclick = () => { STATE.mode = 'hard'; showSettings(); };
-
-    function showSettings() {
-        els.modeStep.classList.add('hidden');
-        els.settingsStep.classList.remove('hidden');
-    }
-
-    document.getElementById('sound-on-btn').onclick = function() { 
-        STATE.isSoundOn=true; this.classList.add('preset-btn-selected'); document.getElementById('sound-off-btn').classList.remove('preset-btn-selected');
-    };
-    document.getElementById('sound-off-btn').onclick = function() { 
-        STATE.isSoundOn=false; this.classList.add('preset-btn-selected'); document.getElementById('sound-on-btn').classList.remove('preset-btn-selected');
-    };
     
-    document.getElementById('timer-yes-btn').onclick = function() {
-        STATE.isTimerEnabled=true; this.classList.add('preset-btn-selected'); document.getElementById('timer-no-btn').classList.remove('preset-btn-selected');
-        document.getElementById('timer-input-container').classList.remove('hidden');
-        document.getElementById('timer-input-container').classList.add('flex');
-    };
-    document.getElementById('timer-no-btn').onclick = function() {
-        STATE.isTimerEnabled=false; this.classList.add('preset-btn-selected'); document.getElementById('timer-yes-btn').classList.remove('preset-btn-selected');
-        document.getElementById('timer-input-container').classList.add('hidden');
-        document.getElementById('timer-input-container').classList.remove('flex');
-    };
+    function animateTimer() {
+        if(STATE.animFrame) cancelAnimationFrame(STATE.animFrame);
+        let lastTime = performance.now();
+        
+        function loop(now) {
+            if(!STATE.isPaused && !document.getElementById('game-card').classList.contains('is-flipped')) {
+                const delta = (now - lastTime) / 1000;
+                STATE.timerVal -= delta;
+                
+                const pct = (STATE.timerVal / CONFIG.timerSeconds) * 100;
+                const bar = document.getElementById('timer-bar');
+                bar.style.width = pct + '%';
+                
+                if(STATE.timerVal <= 0) {
+                    // Time Up -> Force Wrong
+                    // Fill inputs with ?? to trigger wrong state check
+                    STATE.inputs.forEach(i => i.innerText = "0");
+                    submitAnswer();
+                    return; 
+                }
+            }
+            lastTime = now;
+            STATE.animFrame = requestAnimationFrame(loop);
+        }
+        STATE.animFrame = requestAnimationFrame(loop);
+    }
+    
+    function stopTimer() {
+        if(STATE.animFrame) cancelAnimationFrame(STATE.animFrame);
+    }
 
-    document.getElementById('start-game-btn').onclick = () => {
-        const sec = parseInt(document.getElementById('seconds-input').value);
-        if(!isNaN(sec)) STATE.timerTotal = sec;
-        startGame();
-    };
-
-    document.getElementById('pause-btn').onclick = function() {
+    function togglePause() {
         STATE.isPaused = !STATE.isPaused;
-        this.textContent = STATE.isPaused ? 'Resume' : 'Pause';
+        const btn = document.getElementById('pause-btn');
+        const cover = document.getElementById('game-card');
         if(STATE.isPaused) {
-            STATE.elapsedPauseTimeStart = Date.now();
-            els.visualArea.classList.add('opacity-0'); // Hide questions while paused
+            btn.innerText = "RESUME";
+            btn.classList.add('bg-green-500', 'text-white');
+            btn.classList.remove('bg-yellow-400', 'text-yellow-900');
+            cover.classList.add('opacity-10');
         } else {
-            STATE.elapsedPauseTime += (Date.now() - STATE.elapsedPauseTimeStart);
-            els.visualArea.classList.remove('opacity-0');
+            btn.innerText = "PAUSE";
+            btn.classList.remove('bg-green-500', 'text-white');
+            btn.classList.add('bg-yellow-400', 'text-yellow-900');
+            cover.classList.remove('opacity-10');
         }
-    };
-    
-    document.getElementById('restart-btn').onclick = () => location.reload();
-    document.getElementById('win-play-again-btn').onclick = () => startGame(false);
-    document.getElementById('win-start-over-btn').onclick = () => location.reload();
-    document.getElementById('start-practice-btn').onclick = () => startGame(true);
+    }
 
-    // Initial State
-    initKeypad();
-    document.getElementById('sound-on-btn').click();
-    document.getElementById('timer-no-btn').click();
-
+    // --- RENDER HELPERS ---
+    function renderDots() {
+        const c = document.getElementById('progress-dots');
+        c.innerHTML = '';
+        for(let i=0; i<STATE.problems.length; i++) {
+            const d = document.createElement('div');
+            d.className = 'problem-dot dot-pending';
+            d.id = `dot-${i}`;
+            c.appendChild(d);
+        }
+    }
   </script>
 </body>
 </html>
