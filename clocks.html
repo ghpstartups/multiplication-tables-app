@@ -173,22 +173,16 @@
                 } else if (mode === 'math-easy') {
                     // SAME HOUR DIFF
                     const h = getRandomInt(1, 12);
-                    const m1 = getRandomInt(0, 45); // Start time
-                    // Ensure m2 is greater than m1 by at least 5 mins
+                    const m1 = getRandomInt(0, 45); 
                     const diff = getRandomInt(5, 59 - m1); 
                     const m2 = m1 + diff;
-                    
                     problems.push({ h1: h, m1: m1, h2: h, m2: m2 });
-                    
                 } else if (mode === 'math-hard') {
                     // NEXT HOUR DIFF
                     const h1 = getRandomInt(1, 12);
-                    const m1 = getRandomInt(30, 55); // Start late in the hour
-                    
-                    // Add enough minutes to cross the hour, but keep it reasonable (e.g., within 50 mins total diff)
+                    const m1 = getRandomInt(30, 55); 
                     const diff = getRandomInt(60 - m1 + 5, 50); 
                     
-                    // Calculate End Time
                     let totalM = m1 + diff;
                     let h2 = h1 + 1;
                     if(h2 > 12) h2 = 1;
@@ -328,44 +322,56 @@
                     });
 
                 } else {
-                    // --- MODE 2/3: Elapsed Time (1 Column, 5 Rows) ---
-                    // Structure: [Clock 1]  -->  [Clock 2]     [_____ minutes]
+                    // --- MODE 2/3: Elapsed Time (BIGGER CLOCKS) ---
+                    // Structure: [Clock 1]  ----->  [Clock 2]     [_____ minutes]
+                    // We use the full width of the page now.
+                    
                     const rows = MATH_PER_PAGE; // 5
                     const rowHeight = (pageHeight - startY - 30) / rows;
                     const centerY = rowHeight / 2;
-                    const clockRadius = 35; 
-
-                    doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(16); 
+                    
+                    // Increased Radius to use space (Diameter ~96pt)
+                    const clockRadius = 48; 
+                    const clockDiameter = clockRadius * 2;
 
                     pageProblems.forEach((prob, i) => {
                         const rowY = startY + (i * rowHeight);
                         const clockY = rowY + centerY - clockRadius;
                         
-                        let curX = margin + 20; 
-
-                        // 1. Start Clock
-                        drawClock(doc, curX, clockY, clockRadius, prob.h1, prob.m1);
-                        curX += (clockRadius*2) + 30;
-
-                        // 2. Arrow
-                        // Draw a simple arrow
-                        doc.setLineWidth(2);
-                        doc.line(curX, rowY + centerY, curX + 30, rowY + centerY);
-                        doc.line(curX + 25, rowY + centerY - 5, curX + 30, rowY + centerY);
-                        doc.line(curX + 25, rowY + centerY + 5, curX + 30, rowY + centerY);
-                        curX += 60;
-
-                        // 3. End Clock
-                        drawClock(doc, curX, clockY, clockRadius, prob.h2, prob.m2);
-                        curX += (clockRadius*2) + 50;
-
-                        // 4. Answer Line
-                        doc.setLineWidth(1);
-                        doc.line(curX, rowY + centerY + 5, curX + 60, rowY + centerY + 5);
+                        // Layout Coordinates (Distributed across width)
+                        // Page Content Width = 595 - 60 = 535
                         
-                        doc.setFontSize(12);
-                        doc.text("minutes", curX + 70, rowY + centerY + 5);
+                        // 1. Start Clock (Left aligned with padding)
+                        const startClockX = margin + 40;
+                        drawClock(doc, startClockX, clockY, clockRadius, prob.h1, prob.m1);
+                        
+                        // 3. End Clock (Centered-ish right)
+                        const endClockX = startClockX + clockDiameter + 100; // Gap for arrow
+                        drawClock(doc, endClockX, clockY, clockRadius, prob.h2, prob.m2);
+
+                        // 2. Arrow (Between clocks)
+                        const arrowStartX = startClockX + clockDiameter + 15;
+                        const arrowEndX = endClockX - 15;
+                        const arrowY = rowY + centerY;
+                        
+                        doc.setLineWidth(2.5); // Thicker arrow
+                        doc.line(arrowStartX, arrowY, arrowEndX, arrowY);
+                        // Arrow head
+                        doc.line(arrowEndX - 10, arrowY - 7, arrowEndX, arrowY);
+                        doc.line(arrowEndX - 10, arrowY + 7, arrowEndX, arrowY);
+
+                        // 4. Answer Line (Far Right)
+                        const lineStartX = endClockX + clockDiameter + 40;
+                        const lineEndX = pageWidth - margin - 20;
+                        const lineY = rowY + centerY + 5;
+                        
+                        doc.setLineWidth(1);
+                        doc.line(lineStartX, lineY, lineEndX, lineY);
+                        
+                        doc.setFontSize(11);
+                        doc.setFont('helvetica', 'normal');
+                        // Label below line
+                        doc.text("minutes", lineStartX + ((lineEndX - lineStartX)/2), lineY + 15, { align: 'center'});
                         
                         // Separator Line
                         if (i < rows - 1) {
