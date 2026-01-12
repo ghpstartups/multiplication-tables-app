@@ -1,250 +1,458 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>US Map Flashcards</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f9ff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            overflow: hidden;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>US States Flip Map</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: rgba(255,255,255,0.06);
+      --stroke: rgba(255,255,255,0.35);
+      --front: rgba(255,255,255,0.10);
+      --frontHover: rgba(255,255,255,0.18);
+      --back: rgba(255,255,255,0.16);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.70);
+    }
 
-        h1 { color: #1e3a8a; margin: 10px; }
-        p { color: #64748b; margin-bottom: 20px; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 20% 10%, #13204a 0%, var(--bg) 60%);
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+    }
 
-        /* The Map Container */
-        #map-container {
-            width: 95vw;
-            max-width: 1000px;
-            height: auto;
-            /* Perspective is crucial for the 3D flip effect */
-            perspective: 1500px; 
-        }
+    .wrap {
+      width: min(1100px, 96vw);
+      padding: 18px 14px 24px;
+    }
 
-        svg {
-            width: 100%;
-            height: auto;
-            overflow: visible;
-        }
+    .header {
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
 
-        /* The State Group (Holds the shape and the text) */
-        .state-group {
-            cursor: pointer;
-            transform-box: fill-box; /* Rotates around the center of the shape itself */
-            transform-origin: center;
-            transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
-            transform-style: preserve-3d;
-        }
+    .card {
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 12px 14px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+      backdrop-filter: blur(10px);
+    }
 
-        /* Hover Effect: Lift the state up slightly */
-        .state-group:hover {
-            filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.3));
-            /* We use translateZ to lift it towards the user */
-            transform: translateZ(20px); 
-        }
+    h1 {
+      font-size: 18px;
+      margin: 0 0 6px 0;
+      letter-spacing: 0.2px;
+    }
 
-        /* The FLIPPED State (Rotated 180 degrees) */
-        .state-group.flipped {
-            transform: rotateY(180deg);
-        }
+    .hint {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.35;
+      margin: 0;
+    }
 
-        /* The State Shape (The Path) */
-        .state-shape {
-            fill: #3b82f6; /* Blue */
-            stroke: #ffffff;
-            stroke-width: 1;
-            transition: fill 0.3s;
-            /* This makes the shape look solid from both sides */
-            backface-visibility: visible; 
-        }
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
 
-        .state-group:hover .state-shape {
-            fill: #2563eb; /* Darker Blue on hover */
-        }
+    button {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: transform 0.08s ease, background 0.2s ease;
+      user-select: none;
+    }
+    button:hover { background: rgba(255,255,255,0.12); }
+    button:active { transform: translateY(1px); }
 
-        /* When flipped, the shape turns white to act as the "paper" background */
-        .state-group.flipped .state-shape {
-            fill: #ffffff;
-            stroke: #3b82f6;
-        }
+    .status {
+      font-size: 13px;
+      color: var(--muted);
+      padding: 6px 10px;
+      border-radius: 12px;
+      border: 1px dashed rgba(255,255,255,0.18);
+      background: rgba(0,0,0,0.12);
+    }
 
-        /* The Text Label (Hidden initially) */
-        .state-label {
-            pointer-events: none;
-            text-anchor: middle;
-            font-size: 14px;
-            font-weight: bold;
-            fill: #1e3a8a;
-            opacity: 0;
-            transition: opacity 0.3s;
-            /* CRITICAL: The text needs to be pre-rotated -180deg. 
-               Why? Because when the parent flips 180deg, the text inside 
-               would be backwards. This cancels it out so it's readable!
-            */
-            transform: rotateY(180deg) scaleX(-1); 
-            transform-box: fill-box;
-            transform-origin: center;
-            text-shadow: 0px 0px 4px white; /* Halo for readability */
-        }
+    .mapFrame {
+      margin-top: 12px;
+      background: rgba(0,0,0,0.16);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 18px;
+      overflow: hidden;
+      position: relative;
+    }
 
-        /* Show text when flipped */
-        .state-group.flipped .state-label {
-            opacity: 1;
-        }
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
 
-        /* Specific fix for small states to make text visible */
-        .small-state-text {
-            font-size: 24px; /* Larger text for tiny states */
-        }
+    /* --- State "flashcards" --- */
+    .state-card {
+      cursor: pointer;
+      transform-box: fill-box;
+      transform-origin: center;
+      transition: transform 560ms cubic-bezier(.2,.8,.2,1);
+      /* Helps some browsers with SVG transforms */
+      will-change: transform;
+    }
 
-    </style>
+    .state-card .front-shape,
+    .state-card .back-shape {
+      stroke: var(--stroke);
+      stroke-width: 0.8;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .state-card .front-shape {
+      fill: var(--front);
+      transition: fill 200ms ease;
+    }
+
+    .state-card:hover .front-shape { fill: var(--frontHover); }
+
+    /* Back side */
+    .state-card .back-shape {
+      fill: var(--back);
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    .state-card .label {
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      fill: rgba(255,255,255,0.92);
+      paint-order: stroke;
+      stroke: rgba(0,0,0,0.55);
+      stroke-width: 2.5;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .state-card .sub {
+      font-weight: 700;
+      fill: rgba(255,255,255,0.86);
+      paint-order: stroke;
+      stroke: rgba(0,0,0,0.50);
+      stroke-width: 2.0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* “Flip” effect (works in modern browsers). We also gate visibility via opacity. */
+    .state-card.flipped { transform: rotateY(180deg); }
+    .state-card.flipped .front-shape { opacity: 0; }
+    .state-card.flipped .back-shape { opacity: 1; }
+    .state-card.flipped .label,
+    .state-card.flipped .sub { opacity: 1; }
+
+    /* --- Hover-zoom for small states --- */
+    .state-card.small {
+      transition: transform 300ms cubic-bezier(.2,.8,.2,1);
+    }
+    .state-card.small:hover {
+      transform: scale(2.2);
+      filter: drop-shadow(0 10px 18px rgba(0,0,0,0.45));
+    }
+    .state-card.small.flipped:hover {
+      transform: rotateY(180deg) scale(2.2);
+    }
+
+    /* Make sure hovered state draws on top */
+    .state-card.raised { }
+
+    /* Tooltip-like helper for tiny states */
+    .tinyHelp {
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.78);
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 12px;
+      padding: 8px 10px;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .error {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255,80,80,0.14);
+      border: 1px solid rgba(255,80,80,0.35);
+      color: rgba(255,255,255,0.92);
+      display: none;
+    }
+  </style>
 </head>
 <body>
+  <div class="wrap">
+    <div class="header">
+      <div class="card">
+        <h1>US States Flashcard Map</h1>
+        <p class="hint">
+          Click a state to “flip” and reveal its <b>name</b> + <b>abbreviation</b>.<br/>
+          Tiny states zoom on hover for easier clicking.
+        </p>
+      </div>
 
-    <h1>🇺🇸 United States Map</h1>
-    <p>Click any state shape to flip it over!</p>
-
-    <div id="map-container">
-        <svg id="us-svg" viewBox="0 0 960 600"></svg>
+      <div class="controls card">
+        <button id="resetBtn" type="button">Reset (unflip all)</button>
+        <button id="randomBtn" type="button">Random state</button>
+        <div class="status" id="status">Loading map…</div>
+      </div>
     </div>
 
-    <script>
-        // Simplified SVG Path Data for US States
-        // This draws the shapes.
-        const stateData = {
-            "HI": { n: "Hawaii", d: "M 314 577 l -6 -2 l -4 3 l -5 -2 l -2 -5 l 6 -5 l 3 1 l 5 5 l 3 5 z M 346 580 l -4 -1 l -4 3 l -1 3 l 3 2 l 3 -2 l 3 -5 z M 367 590 l -5 -1 l -5 4 l 4 7 l 6 -3 l 0 -7 z M 294 564 l -11 5 l -2 -4 l 4 -9 l 10 3 l -1 5 z" },
-            "AK": { n: "Alaska", d: "M 126 507 l -5 -3 l -3 2 l -4 -2 l -3 4 l 2 6 l 5 2 l 4 -3 l 4 -6 z M 71 497 l -10 6 l -2 15 l 9 4 l 6 -4 l 7 -15 l -10 -6 z M 209 527 l -12 11 l -10 -3 l -12 -12 l 6 -22 l 13 -7 l 6 13 l 9 20 z M 106 439 l -2 3 l 2 3 l 4 -1 l 1 -3 l -1 -3 l -4 1 z M 26 390 l 2 6 l 10 -2 l 3 -5 l -5 -7 l -7 3 l -3 5 z" },
-            "FL": { n: "Florida", d: "M 700 457 l 9 3 l 17 21 l 22 41 l 7 34 l -4 6 l -8 -4 l -11 -28 l -16 -23 l -13 -13 l -43 2 l -3 -8 l 17 -6 l 26 -25 z" },
-            "ME": { n: "Maine", d: "M 887 54 l 12 13 l 8 4 l 7 15 l 11 12 l -2 10 l -7 8 l -13 9 l -9 0 l -4 -42 l 14 -11 l -17 -18 z" },
-            "NY": { n: "New York", d: "M 814 100 l 23 0 l 2 34 l 12 1 l 1 -21 l 19 -16 l -2 -7 l 25 21 l 7 24 l -13 10 l -5 2 l -1 13 l -15 3 l -28 3 l -33 -23 l 7 -44 z" },
-            "PA": { n: "Pennsylvania", d: "M 781 146 l 57 -13 l 2 13 l 14 -3 l 2 31 l -73 9 l -2 -37 z" },
-            "VA": { n: "Virginia", d: "M 762 216 l 12 -10 l 12 -7 l 17 -16 l 3 6 l 10 -3 l 14 31 l 8 3 l 5 14 l -30 1 l -50 -12 l -20 -15 l 19 -12 l 2 20 z" },
-            "WV": { n: "West Virginia", d: "M 737 205 l 20 15 l 50 12 l -6 10 l -14 2 l -6 11 l -25 3 l -4 -16 l -12 -10 l 4 -22 l -7 -5 z" },
-            "OH": { n: "Ohio", d: "M 716 168 l 23 -5 l 22 2 l 16 37 l 2 3 l -10 13 l -20 -2 l -18 -8 l -5 -29 l -10 -11 z" },
-            "IN": { n: "Indiana", d: "M 667 172 l 17 2 l 5 12 l 6 43 l -12 7 l -9 -11 l -3 -27 l -4 -26 z" },
-            "IL": { n: "Illinois", d: "M 629 168 l 32 0 l 4 33 l 3 34 l -16 23 l -21 -25 l -1 -34 l -1 -31 z" },
-            "WI": { n: "Wisconsin", d: "M 598 87 l 11 5 l 10 -3 l 11 4 l 7 18 l -1 54 l -27 1 l -4 -19 l -18 -1 l -6 -23 l 9 -13 l 8 -23 z" },
-            "NC": { n: "North Carolina", d: "M 732 254 l 47 -10 l 13 4 l 28 -2 l 15 15 l -8 15 l -45 15 l -58 -13 l 8 -24 z" },
-            "TN": { n: "Tennessee", d: "M 654 256 l 76 -13 l 12 37 l -87 3 l -6 -17 l 5 -10 z" },
-            "AR": { n: "Arkansas", d: "M 594 286 l 58 -2 l 7 13 l -8 34 l -18 2 l -12 -7 l -4 -28 l -23 -12 z" },
-            "MO": { n: "Missouri", d: "M 581 222 l 43 0 l 8 50 l 4 7 l 25 10 l -6 20 l -59 2 l -4 -39 l -16 -16 l 5 -34 z" },
-            "GA": { n: "Georgia", d: "M 724 286 l 24 -4 l 32 30 l -4 30 l -51 0 l -4 -23 l 3 -33 z" },
-            "SC": { n: "South Carolina", d: "M 749 281 l 42 -5 l 9 12 l -11 20 l -20 5 l -12 -23 l -8 -9 z" },
-            "KY": { n: "Kentucky", d: "M 666 226 l 11 11 l 21 -3 l 17 -11 l 15 20 l -76 13 l -13 -27 l 25 -3 z" },
-            "AL": { n: "Alabama", d: "M 677 290 l 14 3 l 3 31 l 4 21 l -23 1 l -4 -42 l 6 -14 z" },
-            "LA": { n: "Louisiana", d: "M 596 348 l 24 1 l 5 10 l 3 6 l 11 1 l 5 21 l -10 6 l -24 3 l -11 -7 l -3 -22 l 0 -19 z" },
-            "MS": { n: "Mississippi", d: "M 643 294 l 26 -5 l 2 46 l -11 5 l -13 0 l -5 -21 l 1 -25 z" },
-            "IA": { n: "Iowa", d: "M 552 165 l 72 2 l 3 24 l -6 21 l -6 7 l -68 -5 l 5 -49 z" },
-            "MN": { n: "Minnesota", d: "M 538 67 l 25 0 l 42 16 l -5 77 l -59 -6 l -4 -48 l 1 -39 z" },
-            "OK": { n: "Oklahoma", d: "M 488 288 l 99 2 l 2 38 l -34 -4 l -11 -12 l -27 -1 l -29 -23 z" },
-            "TX": { n: "Texas", d: "M 466 288 l 24 22 l 26 1 l 11 13 l 32 3 l 2 24 l -18 20 l -14 30 l -8 7 l -35 -19 l -33 -16 l -28 3 l -14 -12 l 0 -36 l 55 -39 z" },
-            "NM": { n: "New Mexico", d: "M 390 286 l 74 2 l 1 54 l -14 11 l -63 0 l 2 -67 z" },
-            "KS": { n: "Kansas", d: "M 474 228 l 95 3 l 2 52 l -100 -2 l 3 -53 z" },
-            "NE": { n: "Nebraska", d: "M 454 186 l 82 2 l 9 19 l 4 17 l -94 1 l 0 -24 l 22 0 l -23 -15 z" },
-            "SD": { n: "South Dakota", d: "M 445 137 l 93 2 l 5 44 l -96 0 l -2 -46 z" },
-            "ND": { n: "North Dakota", d: "M 442 88 l 91 1 l 2 46 l -92 -1 l -1 -46 z" },
-            "WY": { n: "Wyoming", d: "M 353 147 l 88 3 l -2 60 l -89 -2 l 3 -61 z" },
-            "MT": { n: "Montana", d: "M 293 72 l 142 6 l 2 64 l -90 -2 l -4 -16 l -12 -12 l -27 -24 l -11 -16 z" },
-            "CO": { n: "Colorado", d: "M 362 210 l 90 2 l -4 63 l -91 -1 l 5 -64 z" },
-            "UT": { n: "Utah", d: "M 320 200 l 40 1 l 3 66 l -67 -1 l 1 -41 l 23 -1 l 0 -24 z" },
-            "AZ": { n: "Arizona", d: "M 296 266 l 86 1 l -5 66 l -40 8 l -18 -18 l -6 -35 l -17 -22 z" },
-            "NV": { n: "Nevada", d: "M 248 181 l 70 2 l -4 81 l -36 21 l -33 -62 l 3 -42 z" },
-            "CA": { n: "California", d: "M 226 182 l 24 1 l 0 41 l 36 67 l -18 17 l -10 6 l -19 -5 l -11 -17 l -21 -43 l 19 -67 z" },
-            "OR": { n: "Oregon", d: "M 227 122 l 73 5 l -5 51 l -64 -2 l -11 -14 l -3 -30 l 10 -10 z" },
-            "WA": { n: "Washington", d: "M 233 66 l 56 3 l 4 48 l -73 -4 l 0 -19 l 6 -4 l 7 -24 z" },
-            "ID": { n: "Idaho", d: "M 302 121 l 11 -8 l 24 25 l 10 13 l -6 57 l -43 -1 l 1 -64 l 3 -22 z" },
-            "MI": { n: "Michigan", d: "M 671 161 l 16 -1 l 7 -24 l 24 16 l 3 -24 l -11 -16 l -24 30 l -8 0 l -7 19 z M 634 117 l 40 -6 l -12 -16 l -38 2 l 10 20 z" },
-            "MD": { n: "Maryland", d: "M 759 193 l 42 1 l 2 13 l -19 5 l -4 -11 l -21 5 l -1 -8 l 1 -5 z" },
-            "DE": { n: "Delaware", d: "M 803 200 l 7 1 l 1 12 l -6 2 l -2 -15 z" },
-            "NJ": { n: "New Jersey", d: "M 803 162 l 7 6 l 2 24 l -7 -2 l -8 -13 l 6 -15 z" },
-            "CT": { n: "Connecticut", d: "M 825 137 l 17 1 l 0 11 l -19 4 l 2 -16 z" },
-            "RI": { n: "Rhode Island", d: "M 844 138 l 6 0 l 1 8 l -5 0 l -2 -8 z" },
-            "MA": { n: "Massachusetts", d: "M 820 120 l 35 1 l 4 8 l -1 6 l -35 1 l -3 -16 z" },
-            "VT": { n: "Vermont", d: "M 809 99 l 15 1 l -1 25 l -9 0 l -5 -26 z" },
-            "NH": { n: "New Hampshire", d: "M 825 97 l 12 10 l -4 26 l -10 -1 l 2 -35 z" }
-        };
+    <div class="mapFrame">
+      <svg id="map" viewBox="0 0 1000 620" aria-label="Map of the United States showing states as flip cards" role="img"></svg>
+      <div class="tinyHelp">Tip: hover tiny states to zoom 🔍</div>
+    </div>
 
-        const svg = document.getElementById('us-svg');
-        const NS = "http://www.w3.org/2000/svg";
+    <div class="error" id="errorBox"></div>
+  </div>
 
-        // Generate the Map
-        for (const [code, data] of Object.entries(stateData)) {
-            
-            // 1. Create a Group <g> for the state (This flips)
-            const group = document.createElementNS(NS, "g");
-            group.classList.add("state-group");
-            group.id = code;
+  <!-- Uses public US Atlas topojson and D3 from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+  <script>
+    // FIPS -> { name, abbr }
+    // Source for FIPS codes is standard; map shapes come from us-atlas states-10m.
+    const FIPS = {
+      "01": { name: "Alabama", abbr: "AL" },
+      "02": { name: "Alaska", abbr: "AK" },
+      "04": { name: "Arizona", abbr: "AZ" },
+      "05": { name: "Arkansas", abbr: "AR" },
+      "06": { name: "California", abbr: "CA" },
+      "08": { name: "Colorado", abbr: "CO" },
+      "09": { name: "Connecticut", abbr: "CT" },
+      "10": { name: "Delaware", abbr: "DE" },
+      "11": { name: "District of Columbia", abbr: "DC" },
+      "12": { name: "Florida", abbr: "FL" },
+      "13": { name: "Georgia", abbr: "GA" },
+      "15": { name: "Hawaii", abbr: "HI" },
+      "16": { name: "Idaho", abbr: "ID" },
+      "17": { name: "Illinois", abbr: "IL" },
+      "18": { name: "Indiana", abbr: "IN" },
+      "19": { name: "Iowa", abbr: "IA" },
+      "20": { name: "Kansas", abbr: "KS" },
+      "21": { name: "Kentucky", abbr: "KY" },
+      "22": { name: "Louisiana", abbr: "LA" },
+      "23": { name: "Maine", abbr: "ME" },
+      "24": { name: "Maryland", abbr: "MD" },
+      "25": { name: "Massachusetts", abbr: "MA" },
+      "26": { name: "Michigan", abbr: "MI" },
+      "27": { name: "Minnesota", abbr: "MN" },
+      "28": { name: "Mississippi", abbr: "MS" },
+      "29": { name: "Missouri", abbr: "MO" },
+      "30": { name: "Montana", abbr: "MT" },
+      "31": { name: "Nebraska", abbr: "NE" },
+      "32": { name: "Nevada", abbr: "NV" },
+      "33": { name: "New Hampshire", abbr: "NH" },
+      "34": { name: "New Jersey", abbr: "NJ" },
+      "35": { name: "New Mexico", abbr: "NM" },
+      "36": { name: "New York", abbr: "NY" },
+      "37": { name: "North Carolina", abbr: "NC" },
+      "38": { name: "North Dakota", abbr: "ND" },
+      "39": { name: "Ohio", abbr: "OH" },
+      "40": { name: "Oklahoma", abbr: "OK" },
+      "41": { name: "Oregon", abbr: "OR" },
+      "42": { name: "Pennsylvania", abbr: "PA" },
+      "44": { name: "Rhode Island", abbr: "RI" },
+      "45": { name: "South Carolina", abbr: "SC" },
+      "46": { name: "South Dakota", abbr: "SD" },
+      "47": { name: "Tennessee", abbr: "TN" },
+      "48": { name: "Texas", abbr: "TX" },
+      "49": { name: "Utah", abbr: "UT" },
+      "50": { name: "Vermont", abbr: "VT" },
+      "51": { name: "Virginia", abbr: "VA" },
+      "53": { name: "Washington", abbr: "WA" },
+      "54": { name: "West Virginia", abbr: "WV" },
+      "55": { name: "Wisconsin", abbr: "WI" },
+      "56": { name: "Wyoming", abbr: "WY" }
+    };
 
-            // 2. Create the Path <path> (The shape)
-            const path = document.createElementNS(NS, "path");
-            path.setAttribute("d", data.d);
-            path.classList.add("state-shape");
-            
-            // 3. Create the Text <text> (The Reveal)
-            const text = document.createElementNS(NS, "text");
-            text.classList.add("state-label");
-            text.textContent = data.n; // Full Name
-            // Optional: Add initials too?
-            // text.textContent = `${code} - ${data.n}`;
+    // Which ones should hover-zoom (tiny, clustered in NE corridor)
+    const TINY = new Set(["CT","RI","NJ","DE","MD","MA","VT","NH","DC"]);
 
-            // Add Click Event to Flip
-            group.addEventListener('click', function(e) {
-                // Toggle the 'flipped' class
-                this.classList.toggle('flipped');
-                e.stopPropagation(); // Stop click from bubbling
-            });
+    const statusEl = document.getElementById("status");
+    const errorBox = document.getElementById("errorBox");
+    const svg = d3.select("#map");
 
-            // Assemble
-            group.appendChild(path);
-            group.appendChild(text);
-            svg.appendChild(group);
+    // Keep a list of state <g> selections for reset/random
+    let stateGroups = [];
+    let statesData = [];
 
-            // 4. Center the text automatically
-            // We have to wait for the browser to render the path to know its center
-            // So we use a tiny timeout or calculate immediately after append
-        }
+    function showError(msg) {
+      errorBox.style.display = "block";
+      errorBox.textContent = msg;
+      statusEl.textContent = "Couldn’t load map";
+    }
 
-        // Adjust text positioning after rendering
-        // We calculate the center of every state shape (Bounding Box)
-        setTimeout(() => {
-            const groups = document.querySelectorAll('.state-group');
-            
-            groups.forEach(g => {
-                const path = g.querySelector('path');
-                const text = g.querySelector('text');
-                
-                // Get the math details of the shape
-                const bbox = path.getBBox();
-                
-                // Calculate Center X and Y
-                const cx = bbox.x + bbox.width / 2;
-                const cy = bbox.y + bbox.height / 2;
+    function setStatus(msg) {
+      statusEl.textContent = msg;
+    }
 
-                // Move text to center
-                text.setAttribute("x", cx);
-                text.setAttribute("y", cy);
+    // Bring hovered element to top so zoom doesn't get hidden
+    function raiseToTop(el) {
+      el.parentNode.appendChild(el);
+    }
 
-                // Set the Transform Origin for the FLIP to be the center of the state
-                // This ensures it flips in place, not across the screen
-                g.style.transformOrigin = `${cx}px ${cy}px`;
-                
-                // Tweaks for small states (move text or make smaller)
-                if (bbox.width < 20 || bbox.height < 20) {
-                     text.classList.add('small-state-text');
-                     // Move text slightly up so it's visible over the tiny shape
-                     // text.setAttribute("y", cy - 10); 
-                }
-            });
-        }, 100);
+    async function init() {
+      try {
+        setStatus("Loading map…");
 
-    </script>
+        // Public topojson file containing US states geometry
+        const topo = await d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json");
+
+        // Convert topojson to geojson features
+        const states = topojson.feature(topo, topo.objects.states).features;
+
+        // Some datasets include territories; keep only those we have in FIPS map
+        statesData = states
+          .map(f => {
+            const id = String(f.id).padStart(2, "0");
+            return { ...f, id2: id, meta: FIPS[id] || null };
+          })
+          .filter(f => f.meta);
+
+        // Setup projection and path generator (Albers USA includes AK/HI insets)
+        const projection = d3.geoAlbersUsa();
+        projection.fitExtent([[20, 20], [980, 600]], { type: "FeatureCollection", features: statesData });
+
+        const path = d3.geoPath(projection);
+
+        // Draw each state as a "card" group with front/back shapes and labels
+        const gRoot = svg.append("g");
+
+        const groups = gRoot
+          .selectAll("g.state-card")
+          .data(statesData)
+          .join("g")
+          .attr("class", d => {
+            const abbr = d.meta.abbr;
+            return `state-card${TINY.has(abbr) ? " small" : ""}`;
+          })
+          .attr("data-name", d => d.meta.name)
+          .attr("data-abbr", d => d.meta.abbr)
+          .on("mouseenter", function() {
+            // raise hovered state to top (helps zoomed tiny states)
+            raiseToTop(this);
+          })
+          .on("click", function(event, d) {
+            // Toggle flipped state
+            const node = d3.select(this);
+            const isFlipped = node.classed("flipped");
+            node.classed("flipped", !isFlipped);
+
+            const name = d.meta.name;
+            const abbr = d.meta.abbr;
+            setStatus(!isFlipped ? `✅ ${name} (${abbr})` : "Click a state");
+          });
+
+        // Front shape
+        groups.append("path")
+          .attr("class", "front-shape")
+          .attr("d", d => path(d));
+
+        // Back shape (same geometry)
+        groups.append("path")
+          .attr("class", "back-shape")
+          .attr("d", d => path(d));
+
+        // Labels on back: state name + abbreviation
+        // For readability, we use centroid; tiny states still work due to zoom.
+        groups.each(function(d) {
+          const [cx, cy] = path.centroid(d);
+          const name = d.meta.name;
+          const abbr = d.meta.abbr;
+
+          const node = d3.select(this);
+
+          // Name (smaller for long names)
+          const nameSize =
+            name.length <= 10 ? 13 :
+            name.length <= 14 ? 12 :
+            name.length <= 18 ? 11 : 10;
+
+          node.append("text")
+            .attr("class", "label")
+            .attr("x", cx)
+            .attr("y", cy - 2)
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "central")
+            .style("font-size", nameSize + "px")
+            .text(name);
+
+          node.append("text")
+            .attr("class", "sub")
+            .attr("x", cx)
+            .attr("y", cy + 14)
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "central")
+            .style("font-size", "12px")
+            .text("(" + abbr + ")");
+        });
+
+        stateGroups = groups.nodes().map(n => d3.select(n));
+
+        setStatus("Click a state");
+      } catch (err) {
+        console.error(err);
+        showError(
+          "This page needs internet access the first time to load the map data (us-atlas) and D3.\n" +
+          "If you’re offline, reopen when connected."
+        );
+      }
+    }
+
+    // Controls
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      stateGroups.forEach(s => s.classed("flipped", false));
+      setStatus("Click a state");
+    });
+
+    document.getElementById("randomBtn").addEventListener("click", () => {
+      if (!statesData.length) return;
+      const pick = statesData[Math.floor(Math.random() * statesData.length)];
+      const abbr = pick.meta.abbr;
+
+      // Find corresponding group and flip it
+      const node = d3.selectAll("g.state-card")
+        .filter(d => d.meta && d.meta.abbr === abbr)
+        .node();
+
+      if (node) {
+        raiseToTop(node);
+        const sel = d3.select(node);
+        sel.classed("flipped", true);
+        setStatus(`🎯 ${pick.meta.name} (${abbr})`);
+      }
+    });
+
+    init();
+  </script>
 </body>
 </html>
