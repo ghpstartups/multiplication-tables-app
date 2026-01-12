@@ -3,233 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>US States Flashcards</title>
+    <title>US Map Flashcards</title>
     <style>
-        :root {
-            --card-size: 60px;
-            --gap: 8px;
-            --primary: #3b82f6; /* Nice Blue */
-            --secondary: #ffffff;
-            --text-color: #333;
-            --bg-color: #f0f9ff;
-        }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
+            background-color: #f0f9ff;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            overflow: hidden; /* Prevent scrolling if possible */
+            overflow: hidden;
         }
 
-        h1 {
-            color: #1e3a8a;
-            margin-bottom: 20px;
-            text-align: center;
+        h1 { color: #1e3a8a; margin: 10px; }
+        p { color: #64748b; margin-bottom: 20px; }
+
+        /* The Map Container */
+        #map-container {
+            width: 95vw;
+            max-width: 1000px;
+            height: auto;
+            /* Perspective is crucial for the 3D flip effect */
+            perspective: 1500px; 
         }
 
-        .instructions {
-            margin-bottom: 30px;
-            color: #555;
-            text-align: center;
-            max-width: 600px;
-        }
-
-        /* The Map Grid Container */
-        .us-map {
-            display: grid;
-            /* 12 Columns for the US width */
-            grid-template-columns: repeat(12, var(--card-size));
-            grid-template-rows: repeat(8, var(--card-size));
-            gap: var(--gap);
-            perspective: 1000px; /* Essential for 3D flip effect */
-        }
-
-        /* The Flip Card Container */
-        .card-container {
+        svg {
             width: 100%;
-            height: 100%;
-            background: transparent;
+            height: auto;
+            overflow: visible;
+        }
+
+        /* The State Group (Holds the shape and the text) */
+        .state-group {
             cursor: pointer;
-            position: relative;
-        }
-
-        /* The Inner Flipper */
-        .card {
-            width: 100%;
-            height: 100%;
-            position: relative;
+            transform-box: fill-box; /* Rotates around the center of the shape itself */
+            transform-origin: center;
+            transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
             transform-style: preserve-3d;
-            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        /* State Flipped Status */
-        .card-container.flipped .card {
+        /* Hover Effect: Lift the state up slightly */
+        .state-group:hover {
+            filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.3));
+            /* We use translateZ to lift it towards the user */
+            transform: translateZ(20px); 
+        }
+
+        /* The FLIPPED State (Rotated 180 degrees) */
+        .state-group.flipped {
             transform: rotateY(180deg);
         }
 
-        /* Front and Back styling */
-        .front, .back {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            -webkit-backface-visibility: hidden; /* Safari */
-            backface-visibility: hidden;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 4px;
-            box-sizing: border-box;
+        /* The State Shape (The Path) */
+        .state-shape {
+            fill: #3b82f6; /* Blue */
+            stroke: #ffffff;
+            stroke-width: 1;
+            transition: fill 0.3s;
+            /* This makes the shape look solid from both sides */
+            backface-visibility: visible; 
+        }
+
+        .state-group:hover .state-shape {
+            fill: #2563eb; /* Darker Blue on hover */
+        }
+
+        /* When flipped, the shape turns white to act as the "paper" background */
+        .state-group.flipped .state-shape {
+            fill: #ffffff;
+            stroke: #3b82f6;
+        }
+
+        /* The Text Label (Hidden initially) */
+        .state-label {
+            pointer-events: none;
+            text-anchor: middle;
+            font-size: 14px;
             font-weight: bold;
-            border: 2px solid #2563eb;
+            fill: #1e3a8a;
+            opacity: 0;
+            transition: opacity 0.3s;
+            /* CRITICAL: The text needs to be pre-rotated -180deg. 
+               Why? Because when the parent flips 180deg, the text inside 
+               would be backwards. This cancels it out so it's readable!
+            */
+            transform: rotateY(180deg) scaleX(-1); 
+            transform-box: fill-box;
+            transform-origin: center;
+            text-shadow: 0px 0px 4px white; /* Halo for readability */
         }
 
-        /* Front: The "Map" view */
-        .front {
-            background-color: var(--primary);
-            color: white;
-            font-size: 1.2rem;
-        }
-        
-        /* Hover effect for hint */
-        .card-container:hover .front {
-            background-color: #2563eb;
-            transform: scale(1.05);
-            transition: transform 0.2s;
+        /* Show text when flipped */
+        .state-group.flipped .state-label {
+            opacity: 1;
         }
 
-        /* Back: The "Reveal" view */
-        .back {
-            background-color: white;
-            color: var(--text-color);
-            transform: rotateY(180deg);
-            font-size: 0.75rem; /* Smaller font for full names */
-            line-height: 1.1;
+        /* Specific fix for small states to make text visible */
+        .small-state-text {
+            font-size: 24px; /* Larger text for tiny states */
         }
 
-        .back .initials {
-            font-size: 1.2rem;
-            color: var(--primary);
-            margin-bottom: 4px;
-        }
-
-        /* Responsive scaling for smaller screens */
-        @media (max-width: 900px) {
-            :root {
-                --card-size: 40px;
-                --gap: 4px;
-            }
-            .back { font-size: 0.5rem; }
-            .back .initials { font-size: 0.8rem; }
-        }
     </style>
 </head>
 <body>
 
-    <h1>🇺🇸 State Flashcards</h1>
-    <div class="instructions">Click on a blue tile to flip it and reveal the state's name and initials!</div>
+    <h1>🇺🇸 United States Map</h1>
+    <p>Click any state shape to flip it over!</p>
 
-    <div id="map" class="us-map">
-        </div>
+    <div id="map-container">
+        <svg id="us-svg" viewBox="0 0 960 600"></svg>
+    </div>
 
     <script>
-        // Data: Mapping Codes to Names
-        const stateNames = {
-            "AK": "Alaska", "AL": "Alabama", "AR": "Arkansas", "AZ": "Arizona",
-            "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DC": "District of Columbia",
-            "DE": "Delaware", "FL": "Florida", "GA": "Georgia", "HI": "Hawaii",
-            "IA": "Iowa", "ID": "Idaho", "IL": "Illinois", "IN": "Indiana",
-            "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana", "MA": "Massachusetts",
-            "MD": "Maryland", "ME": "Maine", "MI": "Michigan", "MN": "Minnesota",
-            "MO": "Missouri", "MS": "Mississippi", "MT": "Montana", "NC": "North Carolina",
-            "ND": "North Dakota", "NE": "Nebraska", "NH": "New Hampshire", "NJ": "New Jersey",
-            "NM": "New Mexico", "NV": "Nevada", "NY": "New York", "OH": "Ohio",
-            "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island",
-            "SC": "South Carolina", "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas",
-            "UT": "Utah", "VA": "Virginia", "VT": "Vermont", "WA": "Washington",
-            "WI": "Wisconsin", "WV": "West Virginia", "WY": "Wyoming"
+        // Simplified SVG Path Data for US States
+        // This draws the shapes.
+        const stateData = {
+            "HI": { n: "Hawaii", d: "M 314 577 l -6 -2 l -4 3 l -5 -2 l -2 -5 l 6 -5 l 3 1 l 5 5 l 3 5 z M 346 580 l -4 -1 l -4 3 l -1 3 l 3 2 l 3 -2 l 3 -5 z M 367 590 l -5 -1 l -5 4 l 4 7 l 6 -3 l 0 -7 z M 294 564 l -11 5 l -2 -4 l 4 -9 l 10 3 l -1 5 z" },
+            "AK": { n: "Alaska", d: "M 126 507 l -5 -3 l -3 2 l -4 -2 l -3 4 l 2 6 l 5 2 l 4 -3 l 4 -6 z M 71 497 l -10 6 l -2 15 l 9 4 l 6 -4 l 7 -15 l -10 -6 z M 209 527 l -12 11 l -10 -3 l -12 -12 l 6 -22 l 13 -7 l 6 13 l 9 20 z M 106 439 l -2 3 l 2 3 l 4 -1 l 1 -3 l -1 -3 l -4 1 z M 26 390 l 2 6 l 10 -2 l 3 -5 l -5 -7 l -7 3 l -3 5 z" },
+            "FL": { n: "Florida", d: "M 700 457 l 9 3 l 17 21 l 22 41 l 7 34 l -4 6 l -8 -4 l -11 -28 l -16 -23 l -13 -13 l -43 2 l -3 -8 l 17 -6 l 26 -25 z" },
+            "ME": { n: "Maine", d: "M 887 54 l 12 13 l 8 4 l 7 15 l 11 12 l -2 10 l -7 8 l -13 9 l -9 0 l -4 -42 l 14 -11 l -17 -18 z" },
+            "NY": { n: "New York", d: "M 814 100 l 23 0 l 2 34 l 12 1 l 1 -21 l 19 -16 l -2 -7 l 25 21 l 7 24 l -13 10 l -5 2 l -1 13 l -15 3 l -28 3 l -33 -23 l 7 -44 z" },
+            "PA": { n: "Pennsylvania", d: "M 781 146 l 57 -13 l 2 13 l 14 -3 l 2 31 l -73 9 l -2 -37 z" },
+            "VA": { n: "Virginia", d: "M 762 216 l 12 -10 l 12 -7 l 17 -16 l 3 6 l 10 -3 l 14 31 l 8 3 l 5 14 l -30 1 l -50 -12 l -20 -15 l 19 -12 l 2 20 z" },
+            "WV": { n: "West Virginia", d: "M 737 205 l 20 15 l 50 12 l -6 10 l -14 2 l -6 11 l -25 3 l -4 -16 l -12 -10 l 4 -22 l -7 -5 z" },
+            "OH": { n: "Ohio", d: "M 716 168 l 23 -5 l 22 2 l 16 37 l 2 3 l -10 13 l -20 -2 l -18 -8 l -5 -29 l -10 -11 z" },
+            "IN": { n: "Indiana", d: "M 667 172 l 17 2 l 5 12 l 6 43 l -12 7 l -9 -11 l -3 -27 l -4 -26 z" },
+            "IL": { n: "Illinois", d: "M 629 168 l 32 0 l 4 33 l 3 34 l -16 23 l -21 -25 l -1 -34 l -1 -31 z" },
+            "WI": { n: "Wisconsin", d: "M 598 87 l 11 5 l 10 -3 l 11 4 l 7 18 l -1 54 l -27 1 l -4 -19 l -18 -1 l -6 -23 l 9 -13 l 8 -23 z" },
+            "NC": { n: "North Carolina", d: "M 732 254 l 47 -10 l 13 4 l 28 -2 l 15 15 l -8 15 l -45 15 l -58 -13 l 8 -24 z" },
+            "TN": { n: "Tennessee", d: "M 654 256 l 76 -13 l 12 37 l -87 3 l -6 -17 l 5 -10 z" },
+            "AR": { n: "Arkansas", d: "M 594 286 l 58 -2 l 7 13 l -8 34 l -18 2 l -12 -7 l -4 -28 l -23 -12 z" },
+            "MO": { n: "Missouri", d: "M 581 222 l 43 0 l 8 50 l 4 7 l 25 10 l -6 20 l -59 2 l -4 -39 l -16 -16 l 5 -34 z" },
+            "GA": { n: "Georgia", d: "M 724 286 l 24 -4 l 32 30 l -4 30 l -51 0 l -4 -23 l 3 -33 z" },
+            "SC": { n: "South Carolina", d: "M 749 281 l 42 -5 l 9 12 l -11 20 l -20 5 l -12 -23 l -8 -9 z" },
+            "KY": { n: "Kentucky", d: "M 666 226 l 11 11 l 21 -3 l 17 -11 l 15 20 l -76 13 l -13 -27 l 25 -3 z" },
+            "AL": { n: "Alabama", d: "M 677 290 l 14 3 l 3 31 l 4 21 l -23 1 l -4 -42 l 6 -14 z" },
+            "LA": { n: "Louisiana", d: "M 596 348 l 24 1 l 5 10 l 3 6 l 11 1 l 5 21 l -10 6 l -24 3 l -11 -7 l -3 -22 l 0 -19 z" },
+            "MS": { n: "Mississippi", d: "M 643 294 l 26 -5 l 2 46 l -11 5 l -13 0 l -5 -21 l 1 -25 z" },
+            "IA": { n: "Iowa", d: "M 552 165 l 72 2 l 3 24 l -6 21 l -6 7 l -68 -5 l 5 -49 z" },
+            "MN": { n: "Minnesota", d: "M 538 67 l 25 0 l 42 16 l -5 77 l -59 -6 l -4 -48 l 1 -39 z" },
+            "OK": { n: "Oklahoma", d: "M 488 288 l 99 2 l 2 38 l -34 -4 l -11 -12 l -27 -1 l -29 -23 z" },
+            "TX": { n: "Texas", d: "M 466 288 l 24 22 l 26 1 l 11 13 l 32 3 l 2 24 l -18 20 l -14 30 l -8 7 l -35 -19 l -33 -16 l -28 3 l -14 -12 l 0 -36 l 55 -39 z" },
+            "NM": { n: "New Mexico", d: "M 390 286 l 74 2 l 1 54 l -14 11 l -63 0 l 2 -67 z" },
+            "KS": { n: "Kansas", d: "M 474 228 l 95 3 l 2 52 l -100 -2 l 3 -53 z" },
+            "NE": { n: "Nebraska", d: "M 454 186 l 82 2 l 9 19 l 4 17 l -94 1 l 0 -24 l 22 0 l -23 -15 z" },
+            "SD": { n: "South Dakota", d: "M 445 137 l 93 2 l 5 44 l -96 0 l -2 -46 z" },
+            "ND": { n: "North Dakota", d: "M 442 88 l 91 1 l 2 46 l -92 -1 l -1 -46 z" },
+            "WY": { n: "Wyoming", d: "M 353 147 l 88 3 l -2 60 l -89 -2 l 3 -61 z" },
+            "MT": { n: "Montana", d: "M 293 72 l 142 6 l 2 64 l -90 -2 l -4 -16 l -12 -12 l -27 -24 l -11 -16 z" },
+            "CO": { n: "Colorado", d: "M 362 210 l 90 2 l -4 63 l -91 -1 l 5 -64 z" },
+            "UT": { n: "Utah", d: "M 320 200 l 40 1 l 3 66 l -67 -1 l 1 -41 l 23 -1 l 0 -24 z" },
+            "AZ": { n: "Arizona", d: "M 296 266 l 86 1 l -5 66 l -40 8 l -18 -18 l -6 -35 l -17 -22 z" },
+            "NV": { n: "Nevada", d: "M 248 181 l 70 2 l -4 81 l -36 21 l -33 -62 l 3 -42 z" },
+            "CA": { n: "California", d: "M 226 182 l 24 1 l 0 41 l 36 67 l -18 17 l -10 6 l -19 -5 l -11 -17 l -21 -43 l 19 -67 z" },
+            "OR": { n: "Oregon", d: "M 227 122 l 73 5 l -5 51 l -64 -2 l -11 -14 l -3 -30 l 10 -10 z" },
+            "WA": { n: "Washington", d: "M 233 66 l 56 3 l 4 48 l -73 -4 l 0 -19 l 6 -4 l 7 -24 z" },
+            "ID": { n: "Idaho", d: "M 302 121 l 11 -8 l 24 25 l 10 13 l -6 57 l -43 -1 l 1 -64 l 3 -22 z" },
+            "MI": { n: "Michigan", d: "M 671 161 l 16 -1 l 7 -24 l 24 16 l 3 -24 l -11 -16 l -24 30 l -8 0 l -7 19 z M 634 117 l 40 -6 l -12 -16 l -38 2 l 10 20 z" },
+            "MD": { n: "Maryland", d: "M 759 193 l 42 1 l 2 13 l -19 5 l -4 -11 l -21 5 l -1 -8 l 1 -5 z" },
+            "DE": { n: "Delaware", d: "M 803 200 l 7 1 l 1 12 l -6 2 l -2 -15 z" },
+            "NJ": { n: "New Jersey", d: "M 803 162 l 7 6 l 2 24 l -7 -2 l -8 -13 l 6 -15 z" },
+            "CT": { n: "Connecticut", d: "M 825 137 l 17 1 l 0 11 l -19 4 l 2 -16 z" },
+            "RI": { n: "Rhode Island", d: "M 844 138 l 6 0 l 1 8 l -5 0 l -2 -8 z" },
+            "MA": { n: "Massachusetts", d: "M 820 120 l 35 1 l 4 8 l -1 6 l -35 1 l -3 -16 z" },
+            "VT": { n: "Vermont", d: "M 809 99 l 15 1 l -1 25 l -9 0 l -5 -26 z" },
+            "NH": { n: "New Hampshire", d: "M 825 97 l 12 10 l -4 26 l -10 -1 l 2 -35 z" }
         };
 
-        // Layout: A visual grid representation of the US
-        // . = empty space, Two letters = State Code
-        const mapLayout = [
-            [".", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "ME"],
-            [".", ".", ".", ".", ".", ".", "WI", ".", ".", ".", "VT", "NH"],
-            ["WA", "ID", "MT", "ND", "MN", "IL", "MI", ".", "NY", "MA", ".", "."],
-            ["OR", "NV", "WY", "SD", "IA", "IN", "OH", "PA", "NJ", "CT", "RI", "."],
-            ["CA", "UT", "CO", "NE", "MO", "KY", "WV", "VA", "MD", "DE", ".", "."],
-            [".", "AZ", "NM", "KS", "AR", "TN", "NC", "SC", "DC", ".", ".", "."],
-            [".", ".", ".", "OK", "LA", "MS", "AL", "GA", ".", ".", ".", "."],
-            ["HI", ".", "TX", ".", ".", ".", ".", "FL", ".", ".", ".", "."],
-            ["AK", ".", ".", ".", ".", ".", ".", ".", ".", ".", ".", "."]
-        ];
+        const svg = document.getElementById('us-svg');
+        const NS = "http://www.w3.org/2000/svg";
 
-        const mapContainer = document.getElementById('map');
+        // Generate the Map
+        for (const [code, data] of Object.entries(stateData)) {
+            
+            // 1. Create a Group <g> for the state (This flips)
+            const group = document.createElementNS(NS, "g");
+            group.classList.add("state-group");
+            group.id = code;
 
-        // Function to build the map
-        function buildMap() {
-            mapLayout.forEach((row, rowIndex) => {
-                row.forEach((cell, colIndex) => {
-                    // Create a container for the cell (keeps grid alignment)
-                    const cellDiv = document.createElement('div');
-                    cellDiv.style.gridColumnStart = colIndex + 1;
-                    cellDiv.style.gridRowStart = rowIndex + 1;
+            // 2. Create the Path <path> (The shape)
+            const path = document.createElementNS(NS, "path");
+            path.setAttribute("d", data.d);
+            path.classList.add("state-shape");
+            
+            // 3. Create the Text <text> (The Reveal)
+            const text = document.createElementNS(NS, "text");
+            text.classList.add("state-label");
+            text.textContent = data.n; // Full Name
+            // Optional: Add initials too?
+            // text.textContent = `${code} - ${data.n}`;
 
-                    if (cell !== ".") {
-                        // It's a state! Create the flip card
-                        const cardContainer = document.createElement('div');
-                        cardContainer.className = 'card-container';
-                        
-                        // Interaction: Click to flip
-                        cardContainer.onclick = function() {
-                            this.classList.toggle('flipped');
-                        };
-
-                        const card = document.createElement('div');
-                        card.className = 'card';
-
-                        // Front Face (Blue side)
-                        const front = document.createElement('div');
-                        front.className = 'front';
-                        // Optional: Put a "?" or leave blank to test geography memory
-                        // front.innerText = "?"; 
-
-                        // Back Face (Reveal side)
-                        const back = document.createElement('div');
-                        back.className = 'back';
-                        
-                        const initials = document.createElement('div');
-                        initials.className = 'initials';
-                        initials.innerText = cell; // The Code (e.g. WA)
-
-                        const name = document.createElement('div');
-                        name.innerText = stateNames[cell]; // The Full Name
-
-                        back.appendChild(initials);
-                        back.appendChild(name);
-
-                        card.appendChild(front);
-                        card.appendChild(back);
-                        cardContainer.appendChild(card);
-                        cellDiv.appendChild(cardContainer);
-                    }
-
-                    mapContainer.appendChild(cellDiv);
-                });
+            // Add Click Event to Flip
+            group.addEventListener('click', function(e) {
+                // Toggle the 'flipped' class
+                this.classList.toggle('flipped');
+                e.stopPropagation(); // Stop click from bubbling
             });
+
+            // Assemble
+            group.appendChild(path);
+            group.appendChild(text);
+            svg.appendChild(group);
+
+            // 4. Center the text automatically
+            // We have to wait for the browser to render the path to know its center
+            // So we use a tiny timeout or calculate immediately after append
         }
 
-        // Initialize
-        buildMap();
+        // Adjust text positioning after rendering
+        // We calculate the center of every state shape (Bounding Box)
+        setTimeout(() => {
+            const groups = document.querySelectorAll('.state-group');
+            
+            groups.forEach(g => {
+                const path = g.querySelector('path');
+                const text = g.querySelector('text');
+                
+                // Get the math details of the shape
+                const bbox = path.getBBox();
+                
+                // Calculate Center X and Y
+                const cx = bbox.x + bbox.width / 2;
+                const cy = bbox.y + bbox.height / 2;
+
+                // Move text to center
+                text.setAttribute("x", cx);
+                text.setAttribute("y", cy);
+
+                // Set the Transform Origin for the FLIP to be the center of the state
+                // This ensures it flips in place, not across the screen
+                g.style.transformOrigin = `${cx}px ${cy}px`;
+                
+                // Tweaks for small states (move text or make smaller)
+                if (bbox.width < 20 || bbox.height < 20) {
+                     text.classList.add('small-state-text');
+                     // Move text slightly up so it's visible over the tiny shape
+                     // text.setAttribute("y", cy - 10); 
+                }
+            });
+        }, 100);
 
     </script>
 </body>
