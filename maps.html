@@ -98,7 +98,7 @@
 
     svg{ width:100%; height:auto; display:block; }
 
-    /* --- State "flashcards" (no 3D rotate so text never mirrors) --- */
+    /* --- State cards (no 3D rotate so text never mirrors) --- */
     .state-card{ cursor:pointer; transform-box: fill-box; transform-origin: center; }
 
     .state-card .front-shape,
@@ -109,16 +109,10 @@
       transition: fill 220ms ease, stroke 220ms ease, opacity 180ms ease, filter 220ms ease;
     }
 
-    .state-card .front-shape{
-      fill:var(--front);
-      opacity:1;
-    }
+    .state-card .front-shape{ fill:var(--front); opacity:1; }
     .state-card:hover .front-shape{ fill:var(--frontHover); }
 
-    .state-card .back-shape{
-      fill:var(--back);
-      opacity:0;
-    }
+    .state-card .back-shape{ fill:var(--back); opacity:0; }
 
     .state-card .label,
     .state-card .sub{
@@ -172,13 +166,19 @@
       stroke: var(--callBoxStroke);
       stroke-width: 1;
       vector-effect: non-scaling-stroke;
-      rx: 6; ry: 6;
-      transition: opacity 180ms ease, fill 220ms ease, stroke 220ms ease;
+      transition: opacity 180ms ease, fill 220ms ease, stroke 220ms ease, filter 220ms ease;
     }
     .callout-front{ fill: var(--callBoxFront); opacity: 1; }
     .callout-back { fill: var(--callBoxBack);  opacity: 0; }
 
-    .callout-text-front,
+    /* Front shows NOTHING before clicking */
+    .callout-text-front{
+      opacity: 0;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* Back shows Name + Initials (no parentheses) */
     .callout-text-back{
       font-weight: 800;
       fill: rgba(255,255,255,0.92);
@@ -188,13 +188,11 @@
       pointer-events: none;
       user-select: none;
       transition: opacity 180ms ease;
+      opacity: 0;
     }
-    .callout-text-front{ opacity: 1; font-size: 12px; }
-    .callout-text-back { opacity: 0; font-size: 12px; }
 
     .callout-card.flipped .callout-front{ opacity: 0; }
     .callout-card.flipped .callout-back { opacity: 1; }
-    .callout-card.flipped .callout-text-front{ opacity: 0; }
     .callout-card.flipped .callout-text-back { opacity: 1; }
 
     .callout-card.selected .callout-front,
@@ -221,8 +219,8 @@
       <div class="card">
         <h1>US States Flashcard Map</h1>
         <p class="hint">
-          Click a state to reveal its <b>name</b> + <b>abbreviation</b>.<br/>
-          Tiny states: click the <b>callout squares</b> on the right.
+          Click a state to reveal its <b>name</b> + <b>initials</b>.<br/>
+          Tiny states: click the blank <b>callout squares</b> on the right.
         </p>
       </div>
 
@@ -234,7 +232,6 @@
     </div>
 
     <div class="mapFrame">
-      <!-- Wider viewBox to create “outside of map” space for callouts -->
       <svg id="map" viewBox="0 0 1100 620" aria-label="Map of the United States showing states as flip cards" role="img"></svg>
     </div>
 
@@ -273,8 +270,8 @@
       "56": { name: "Wyoming", abbr: "WY" }
     };
 
-    // Tiny / hard-to-click states -> callouts with lines and squares
-    const TINY_ABBR = ["DC","RI","DE","CT","NJ","MA","MD","VT","NH"]; // ordered roughly south->north-ish
+    // Tiny / hard-to-click states -> use callouts ONLY for labels
+    const TINY_ABBR = ["DC","RI","DE","CT","NJ","MA","MD","VT","NH"];
     const TINY = new Set(TINY_ABBR);
 
     const statusEl = document.getElementById("status");
@@ -282,7 +279,7 @@
     const svg = d3.select("#map");
 
     let statesData = [];
-    let stateByAbbr = new Map();
+    let metaByAbbr = new Map();
     let stateSelByAbbr = new Map();
     let calloutSelByAbbr = new Map();
 
@@ -296,31 +293,42 @@
 
     function popSelection(sel){
       sel.classed("popped", true);
-      // Remove class after animation ends
       setTimeout(() => sel.classed("popped", false), 280);
     }
 
-    function toggleState(abbr, forceFlip = null){
+    // Toggle ON/OFF so clicking again fully resets the state
+    function toggleState(abbr, forceOn = null){
       const s = stateSelByAbbr.get(abbr);
       if (!s) return;
 
-      const isFlipped = s.classed("flipped");
-      const willFlip = (forceFlip === null) ? !isFlipped : !!forceFlip;
+      const isOn = s.classed("selected") || s.classed("flipped");
+      const nextOn = (forceOn === null) ? !isOn : !!forceOn;
 
-      s.classed("flipped", willFlip);
-      s.classed("selected", true);
+      // For tiny states: never show labels on the state itself.
+      // We still color-highlight the state for feedback.
+      const showStateText = !TINY.has(abbr);
+
+      s.classed("selected", nextOn);
+
+      if (showStateText) {
+        s.classed("flipped", nextOn);
+      } else {
+        // ensure no state text appears
+        s.classed("flipped", false);
+      }
+
       popSelection(s);
 
-      // Keep callout in sync if it exists
+      // Sync callout if present
       const c = calloutSelByAbbr.get(abbr);
       if (c){
-        c.classed("flipped", willFlip);
-        c.classed("selected", true);
+        c.classed("selected", nextOn);
+        c.classed("flipped", nextOn);
         popSelection(c);
       }
 
-      const meta = stateByAbbr.get(abbr);
-      setStatus(willFlip ? `✅ ${meta.name} (${abbr})` : "Click a state");
+      const meta = metaByAbbr.get(abbr);
+      setStatus(nextOn ? `✅ ${meta.name} ${abbr}` : "Click a state");
     }
 
     function resetAll(){
@@ -347,7 +355,7 @@
           })
           .filter(f => f.meta);
 
-        // Layout: leave room on right for callouts (outside map)
+        // Layout: leave room on right for callouts
         const projection = d3.geoAlbersUsa();
         projection.fitExtent([[20,20],[900,600]], { type:"FeatureCollection", features: statesData });
         const path = d3.geoPath(projection);
@@ -356,7 +364,7 @@
         const statesLayer = root.append("g").attr("id","statesLayer");
         const calloutLayer = root.append("g").attr("id","calloutLayer");
 
-        // Draw state groups
+        // Draw states
         const groups = statesLayer.selectAll("g.state-card")
           .data(statesData)
           .join("g")
@@ -364,8 +372,7 @@
           .attr("data-abbr", d => d.meta.abbr)
           .on("mouseenter", function(){ raiseToTop(this); })
           .on("click", function(event, d){
-            const abbr = d.meta.abbr;
-            toggleState(abbr);
+            toggleState(d.meta.abbr);
           });
 
         groups.append("path")
@@ -376,11 +383,13 @@
           .attr("class","back-shape")
           .attr("d", d => path(d));
 
-        // Labels on the back side
+        // Labels: ONLY for non-tiny states
         groups.each(function(d){
+          const abbr = d.meta.abbr;
+          if (TINY.has(abbr)) return; // no state text at all for tiny states
+
           const [cx, cy] = path.centroid(d);
           const name = d.meta.name;
-          const abbr = d.meta.abbr;
 
           const nameSize =
             name.length <= 10 ? 13 :
@@ -403,17 +412,14 @@
             .attr("text-anchor","middle")
             .attr("dominant-baseline","central")
             .style("font-size","12px")
-            .text("(" + abbr + ")");
+            .text(abbr); // NO parentheses
         });
 
-        // Index for quick access
-        statesData.forEach(d => stateByAbbr.set(d.meta.abbr, d.meta));
-        groups.each(function(d){
-          stateSelByAbbr.set(d.meta.abbr, d3.select(this));
-        });
+        // Index lookups
+        statesData.forEach(d => metaByAbbr.set(d.meta.abbr, d.meta));
+        groups.each(function(d){ stateSelByAbbr.set(d.meta.abbr, d3.select(this)); });
 
-        // --- Put Alaska + Hawaii in standard inset positions (bottom-left outside mainland area) ---
-        // NOTE: geoAlbersUsa already places AK/HI as insets; we just relocate them further down-left.
+        // AK/HI: standard inset positions (bottom-left outside mainland)
         function moveStateInset(abbr, targetX, targetY, scale=1){
           const sel = stateSelByAbbr.get(abbr);
           if (!sel) return;
@@ -426,17 +432,12 @@
           const dx = targetX - cx;
           const dy = targetY - cy;
 
-          // Preserve any existing transform by replacing with our inset transform
           sel.attr("transform", `translate(${dx},${dy}) scale(${scale})`);
         }
-
-        // These positions are in the “empty” bottom-left area.
-        // Tweak if you want them a bit higher/lower.
         moveStateInset("AK", 150, 520, 0.92);
         moveStateInset("HI", 320, 525, 1.00);
 
-        // --- Callouts for tiny states: leader lines + clickable squares outside the map ---
-        // Determine centroids for those states
+        // --- Callouts for tiny states: lines + blank squares; reveal Name + Initials on click ---
         const tinyFeatures = statesData
           .filter(d => TINY.has(d.meta.abbr))
           .map(d => {
@@ -445,14 +446,12 @@
           })
           .sort((a,b) => a.cy - b.cy);
 
-        // Create nicely spaced anchor Y positions (avoid overlapping)
-        const anchorX = 1015; // outside map (right side)
+        const anchorX = 1015;
         const minY = 90, maxY = 420;
         const step = 30;
 
-        // Start from projected Y but enforce spacing
         let lastY = -Infinity;
-        tinyFeatures.forEach((t, i) => {
+        tinyFeatures.forEach(t => {
           let y = Math.max(minY, Math.min(maxY, t.cy));
           if (y < lastY + step) y = lastY + step;
           lastY = y;
@@ -460,19 +459,16 @@
           t.ax = anchorX;
         });
 
-        // Leader lines
         calloutLayer.selectAll("path.callout-line")
           .data(tinyFeatures)
           .join("path")
           .attr("class","callout-line")
           .attr("d", d => {
-            const midX = 935; // elbow point near map edge
-            // polyline-like path: centroid -> midX -> anchor
+            const midX = 935;
             return `M ${d.cx} ${d.cy} L ${midX} ${d.cy} L ${midX} ${d.ay} L ${d.ax - 18} ${d.ay}`;
           });
 
-        // Callout squares (mini flip cards)
-        const boxW = 72, boxH = 26;
+        const boxW = 120, boxH = 34;
 
         const callouts = calloutLayer.selectAll("g.callout-card")
           .data(tinyFeatures)
@@ -485,46 +481,56 @@
             toggleState(d.abbr);
           });
 
-        // front rect
         callouts.append("rect")
           .attr("class","callout-front")
           .attr("x", 0)
           .attr("y", -boxH/2)
           .attr("width", boxW)
           .attr("height", boxH)
-          .attr("rx", 7).attr("ry", 7);
+          .attr("rx", 8).attr("ry", 8);
 
-        // back rect
         callouts.append("rect")
           .attr("class","callout-back")
           .attr("x", 0)
           .attr("y", -boxH/2)
           .attr("width", boxW)
           .attr("height", boxH)
-          .attr("rx", 7).attr("ry", 7);
+          .attr("rx", 8).attr("ry", 8);
 
-        // front text: abbreviation
+        // Front text exists but is invisible (so "nothing before clicking")
         callouts.append("text")
           .attr("class","callout-text-front")
           .attr("x", boxW/2)
           .attr("y", 0)
           .attr("text-anchor","middle")
           .attr("dominant-baseline","central")
-          .text(d => d.abbr);
+          .text("");
 
-        // back text: name (shorten if needed) + abbr
+        // Back text (two lines): Name then Initials (no parentheses)
         callouts.append("text")
           .attr("class","callout-text-back")
-          .attr("x", 6)
-          .attr("y", 0)
+          .attr("x", 10)
+          .attr("y", -2)
           .attr("text-anchor","start")
           .attr("dominant-baseline","central")
-          .text(d => {
-            const label = d.name.length > 12 ? d.name.slice(0, 11) + "…" : d.name;
-            return `${label} (${d.abbr})`;
+          .each(function(d){
+            const t = d3.select(this);
+
+            // Slight shortening for very long names
+            const name = d.name.length > 16 ? d.name.slice(0, 15) + "…" : d.name;
+
+            t.append("tspan")
+              .attr("x", 10)
+              .attr("dy", 0)
+              .text(name);
+
+            t.append("tspan")
+              .attr("x", 10)
+              .attr("dy", 14)
+              .style("font-weight", 900)
+              .text(d.abbr);
           });
 
-        // Save callout selections for reset + sync
         callouts.each(function(d){
           calloutSelByAbbr.set(d.abbr, d3.select(this));
         });
