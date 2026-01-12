@@ -2,12 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>US States Flip Map (50 States)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>US States Map</title>
   <style>
     :root{
       --bg:#0b1020;
-      --panel:rgba(255,255,255,0.06);
       --stroke:rgba(255,255,255,0.35);
 
       --front:rgba(255,255,255,0.10);
@@ -18,85 +17,68 @@
       --selectedBack:  rgba(120, 230, 170, 0.30);
       --selectedStroke: rgba(160, 255, 210, 0.70);
 
-      --text:rgba(255,255,255,0.92);
-      --muted:rgba(255,255,255,0.70);
-
       --callLine: rgba(255,255,255,0.42);
       --callBoxFront: rgba(255,255,255,0.10);
       --callBoxBack: rgba(255,255,255,0.18);
       --callBoxStroke: rgba(255,255,255,0.35);
     }
 
-    body{
-      margin:0;
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
-      background:radial-gradient(1200px 800px at 20% 10%, #13204a 0%, var(--bg) 60%);
-      color:var(--text);
-      min-height:100vh;
-      display:grid;
-      place-items:center;
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(1200px 800px at 20% 10%, #13204a 0%, var(--bg) 60%);
+      overflow: hidden;
+      height: 100%;
     }
 
-    .wrap{ width:min(1180px, 96vw); padding:18px 14px 24px; }
-
-    .header{
-      display:flex;
-      gap:12px;
-      justify-content:space-between;
-      align-items:flex-start;
-      flex-wrap:wrap;
-      margin-bottom:10px;
+    /* Fullscreen-friendly container */
+    .stage{
+      position: fixed;
+      inset: 0;
+      padding:
+        env(safe-area-inset-top)
+        env(safe-area-inset-right)
+        env(safe-area-inset-bottom)
+        env(safe-area-inset-left);
+      display: grid;
+      place-items: center;
     }
 
-    .card{
-      background:var(--panel);
-      border:1px solid rgba(255,255,255,0.12);
-      border-radius:16px;
-      padding:12px 14px;
-      box-shadow:0 12px 30px rgba(0,0,0,0.25);
-      backdrop-filter:blur(10px);
+    /* Use dynamic viewport units where supported */
+    .frame{
+      width: 100vw;
+      height: 100vh;
+      height: 100svh;
+      height: 100dvh;
+      display: grid;
+      place-items: center;
     }
 
-    h1{ font-size:18px; margin:0 0 6px 0; letter-spacing:0.2px; }
-    .hint{ font-size:13px; color:var(--muted); line-height:1.35; margin:0; }
-
-    .controls{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-
-    button{
-      appearance:none;
-      border:1px solid rgba(255,255,255,0.18);
-      background:rgba(255,255,255,0.08);
-      color:var(--text);
-      padding:8px 10px;
-      border-radius:12px;
-      cursor:pointer;
-      font-weight:600;
-      font-size:13px;
-      transition:transform 0.08s ease, background 0.2s ease;
-      user-select:none;
-    }
-    button:hover{ background:rgba(255,255,255,0.12); }
-    button:active{ transform:translateY(1px); }
-
-    .status{
-      font-size:13px;
-      color:var(--muted);
-      padding:6px 10px;
-      border-radius:12px;
-      border:1px dashed rgba(255,255,255,0.18);
-      background:rgba(0,0,0,0.12);
+    /* In landscape, maximize */
+    @media (orientation: landscape) {
+      .frame{
+        width: 100vw;
+        height: 100vh;
+        height: 100svh;
+        height: 100dvh;
+      }
     }
 
-    .mapFrame{
-      margin-top:12px;
-      background:rgba(0,0,0,0.16);
-      border:1px solid rgba(255,255,255,0.14);
-      border-radius:18px;
-      overflow:hidden;
-      position:relative;
+    /* In portrait, still fit fully */
+    @media (orientation: portrait) {
+      .frame{
+        width: 100vw;
+        height: 100vh;
+        height: 100svh;
+        height: 100dvh;
+      }
     }
 
-    svg{ width:100%; height:auto; display:block; }
+    svg{
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
 
     /* --- State cards --- */
     .state-card{ cursor:pointer; transform-box: fill-box; transform-origin: center; }
@@ -188,41 +170,13 @@
       stroke: var(--selectedStroke);
       filter: drop-shadow(0 10px 14px rgba(0,0,0,0.35));
     }
-
-    .error{
-      margin-top:12px;
-      padding:12px 14px;
-      border-radius:14px;
-      background:rgba(255,80,80,0.14);
-      border:1px solid rgba(255,80,80,0.35);
-      color:rgba(255,255,255,0.92);
-      display:none;
-    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="header">
-      <div class="card">
-        <h1>US States Flashcard Map</h1>
-        <p class="hint">
-          Click a state to reveal its <b>name</b> + <b>initials</b>.<br/>
-          Tiny states: click the blank <b>callout boxes</b> on the right.
-        </p>
-      </div>
-
-      <div class="controls card">
-        <button id="resetBtn" type="button">Reset</button>
-        <button id="randomBtn" type="button">Random state</button>
-        <div class="status" id="status">Loading map…</div>
-      </div>
+  <div class="stage">
+    <div class="frame">
+      <svg id="map" viewBox="0 0 1200 620" aria-label="Map of the United States" role="img"></svg>
     </div>
-
-    <div class="mapFrame">
-      <svg id="map" viewBox="0 0 1200 620" aria-label="Map of the United States showing states as flip cards" role="img"></svg>
-    </div>
-
-    <div class="error" id="errorBox"></div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
@@ -261,8 +215,6 @@
     const TINY_ABBR = ["RI","DE","CT","NJ","MA","MD","VT","NH"];
     const TINY = new Set(TINY_ABBR);
 
-    const statusEl = document.getElementById("status");
-    const errorBox = document.getElementById("errorBox");
     const svg = d3.select("#map");
 
     let statesData = [];
@@ -270,24 +222,22 @@
     let stateSelByAbbr = new Map();
     let calloutSelByAbbr = new Map();
 
-    function setStatus(msg){ statusEl.textContent = msg; }
-    function showError(msg){
-      errorBox.style.display = "block";
-      errorBox.textContent = msg;
-      setStatus("Couldn’t load map");
-    }
     function raiseToTop(el){ el.parentNode.appendChild(el); }
     function popSelection(sel){
       sel.classed("popped", true);
       setTimeout(() => sel.classed("popped", false), 280);
     }
+    function shortenToFit(name, maxChars){
+      return name.length > maxChars ? name.slice(0, maxChars - 1) + "…" : name;
+    }
 
-    function toggleState(abbr, forceOn = null){
+    // Toggle ON/OFF (click again resets color + hides text)
+    function toggleState(abbr){
       const s = stateSelByAbbr.get(abbr);
       if (!s) return;
 
       const isOn = s.classed("selected") || s.classed("flipped");
-      const nextOn = (forceOn === null) ? !isOn : !!forceOn;
+      const nextOn = !isOn;
 
       const showStateText = !TINY.has(abbr);
 
@@ -301,236 +251,196 @@
         c.classed("flipped", nextOn);
         popSelection(c);
       }
-
-      const meta = metaByAbbr.get(abbr);
-      setStatus(nextOn ? `✅ ${meta.name} ${abbr}` : "Click a state");
-    }
-
-    function resetAll(){
-      for (const [, s] of stateSelByAbbr.entries()){
-        s.classed("flipped", false).classed("selected", false);
-      }
-      for (const [, c] of calloutSelByAbbr.entries()){
-        c.classed("flipped", false).classed("selected", false);
-      }
-      setStatus("Click a state");
-    }
-
-    function shortenToFit(name, maxChars){
-      return name.length > maxChars ? name.slice(0, maxChars - 1) + "…" : name;
     }
 
     async function init(){
-      try{
-        setStatus("Loading map…");
+      // Load US states topojson
+      const topo = await d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json");
+      const states = topojson.feature(topo, topo.objects.states).features;
 
-        const topo = await d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json");
-        const states = topojson.feature(topo, topo.objects.states).features;
+      // Keep only the 50 states we have in FIPS map
+      statesData = states
+        .map(f => {
+          const id2 = String(f.id).padStart(2,"0");
+          return { ...f, id2, meta: FIPS[id2] || null };
+        })
+        .filter(f => f.meta);
 
-        // Keep only the 50 states we have in FIPS map above
-        statesData = states
-          .map(f => {
-            const id2 = String(f.id).padStart(2,"0");
-            return { ...f, id2, meta: FIPS[id2] || null };
-          })
-          .filter(f => f.meta);
+      // Leave room on right for callouts
+      const projection = d3.geoAlbersUsa();
+      projection.fitExtent([[20,20],[930,600]], { type:"FeatureCollection", features: statesData });
+      const path = d3.geoPath(projection);
 
-        // Leave room on right for callouts
-        const projection = d3.geoAlbersUsa();
-        projection.fitExtent([[20,20],[930,600]], { type:"FeatureCollection", features: statesData });
-        const path = d3.geoPath(projection);
+      const root = svg.append("g").attr("id","root");
+      const statesLayer = root.append("g").attr("id","statesLayer");
+      const calloutLayer = root.append("g").attr("id","calloutLayer");
 
-        const root = svg.append("g").attr("id","root");
-        const statesLayer = root.append("g").attr("id","statesLayer");
-        const calloutLayer = root.append("g").attr("id","calloutLayer");
+      // Draw states
+      const groups = statesLayer.selectAll("g.state-card")
+        .data(statesData)
+        .join("g")
+        .attr("class","state-card")
+        .attr("data-abbr", d => d.meta.abbr)
+        .on("mouseenter", function(){ raiseToTop(this); })
+        .on("click", function(event, d){ toggleState(d.meta.abbr); });
 
-        // Draw states
-        const groups = statesLayer.selectAll("g.state-card")
-          .data(statesData)
-          .join("g")
-          .attr("class","state-card")
-          .attr("data-abbr", d => d.meta.abbr)
-          .on("mouseenter", function(){ raiseToTop(this); })
-          .on("click", function(event, d){
-            toggleState(d.meta.abbr);
-          });
+      groups.append("path")
+        .attr("class","front-shape")
+        .attr("d", d => path(d));
 
-        groups.append("path")
-          .attr("class","front-shape")
-          .attr("d", d => path(d));
+      groups.append("path")
+        .attr("class","back-shape")
+        .attr("d", d => path(d));
 
-        groups.append("path")
-          .attr("class","back-shape")
-          .attr("d", d => path(d));
+      // Labels only for non-tiny states
+      groups.each(function(d){
+        const abbr = d.meta.abbr;
+        if (TINY.has(abbr)) return;
 
-        // Labels only for non-tiny states
-        groups.each(function(d){
-          const abbr = d.meta.abbr;
-          if (TINY.has(abbr)) return;
+        const [cx, cy] = path.centroid(d);
+        const name = d.meta.name;
 
-          const [cx, cy] = path.centroid(d);
-          const name = d.meta.name;
+        const nameSize =
+          name.length <= 10 ? 13 :
+          name.length <= 14 ? 12 :
+          name.length <= 18 ? 11 : 10;
 
-          const nameSize =
-            name.length <= 10 ? 13 :
-            name.length <= 14 ? 12 :
-            name.length <= 18 ? 11 : 10;
+        const node = d3.select(this);
 
-          const node = d3.select(this);
-
-          node.append("text")
-            .attr("class","label")
-            .attr("x", cx).attr("y", cy - 2)
-            .attr("text-anchor","middle")
-            .attr("dominant-baseline","central")
-            .style("font-size", nameSize + "px")
-            .text(name);
-
-          node.append("text")
-            .attr("class","sub")
-            .attr("x", cx).attr("y", cy + 14)
-            .attr("text-anchor","middle")
-            .attr("dominant-baseline","central")
-            .style("font-size","12px")
-            .text(abbr);
-        });
-
-        // Index lookups
-        statesData.forEach(d => metaByAbbr.set(d.meta.abbr, d.meta));
-        groups.each(function(d){ stateSelByAbbr.set(d.meta.abbr, d3.select(this)); });
-
-        // AK/HI: inset positions (bottom-left outside mainland)
-        function moveStateInset(abbr, targetX, targetY, scale=1){
-          const sel = stateSelByAbbr.get(abbr);
-          if (!sel) return;
-
-          const node = sel.node();
-          const bbox = node.getBBox();
-          const cx = bbox.x + bbox.width/2;
-          const cy = bbox.y + bbox.height/2;
-
-          sel.attr("transform", `translate(${targetX - cx},${targetY - cy}) scale(${scale})`);
-        }
-        moveStateInset("AK", 165, 520, 0.92);
-        moveStateInset("HI", 355, 525, 1.00);
-
-        // --- Callouts (more spacing + bigger boxes + safer text) ---
-        const tinyFeatures = statesData
-          .filter(d => TINY.has(d.meta.abbr))
-          .map(d => {
-            const c = path.centroid(d);
-            return { abbr: d.meta.abbr, name: d.meta.name, cx: c[0], cy: c[1] };
-          })
-          .sort((a,b) => a.cy - b.cy);
-
-        const anchorX = 1035;   // further right = more breathing room
-        const minY = 85, maxY = 505;
-        const step = 52;        // bigger spacing so lines/boxes aren't crowded
-
-        let lastY = -Infinity;
-        tinyFeatures.forEach(t => {
-          let y = Math.max(minY, Math.min(maxY, t.cy));
-          if (y < lastY + step) y = lastY + step;
-          lastY = y;
-          t.ay = y;
-          t.ax = anchorX;
-        });
-
-        // Lines (with an elbow)
-        calloutLayer.selectAll("path.callout-line")
-          .data(tinyFeatures)
-          .join("path")
-          .attr("class","callout-line")
-          .attr("d", d => {
-            const midX = 965;  // elbow x near map edge
-            return `M ${d.cx} ${d.cy} L ${midX} ${d.cy} L ${midX} ${d.ay} L ${d.ax - 20} ${d.ay}`;
-          });
-
-        const boxW = 190;  // wider so text fits
-        const boxH = 44;   // taller so 2 lines fit with padding
-        const padX = 14;
-
-        const callouts = calloutLayer.selectAll("g.callout-card")
-          .data(tinyFeatures)
-          .join("g")
-          .attr("class","callout-card")
-          .attr("data-abbr", d => d.abbr)
-          .attr("transform", d => `translate(${d.ax},${d.ay})`)
-          .on("mouseenter", function(){ raiseToTop(this); })
-          .on("click", function(event, d){
-            toggleState(d.abbr);
-          });
-
-        callouts.append("rect")
-          .attr("class","callout-front")
-          .attr("x", 0)
-          .attr("y", -boxH/2)
-          .attr("width", boxW)
-          .attr("height", boxH)
-          .attr("rx", 10).attr("ry", 10);
-
-        callouts.append("rect")
-          .attr("class","callout-back")
-          .attr("x", 0)
-          .attr("y", -boxH/2)
-          .attr("width", boxW)
-          .attr("height", boxH)
-          .attr("rx", 10).attr("ry", 10);
-
-        // Front text exists but invisible (blank before clicking)
-        callouts.append("text")
-          .attr("class","callout-text-front")
-          .attr("x", boxW/2)
-          .attr("y", 0)
+        node.append("text")
+          .attr("class","label")
+          .attr("x", cx).attr("y", cy - 2)
           .attr("text-anchor","middle")
           .attr("dominant-baseline","central")
-          .text("");
+          .style("font-size", nameSize + "px")
+          .text(name);
 
-        // Back text (2 lines): Name then initials
-        callouts.append("text")
-          .attr("class","callout-text-back")
-          .attr("x", padX)
-          .attr("y", -6)
-          .attr("text-anchor","start")
+        node.append("text")
+          .attr("class","sub")
+          .attr("x", cx).attr("y", cy + 14)
+          .attr("text-anchor","middle")
           .attr("dominant-baseline","central")
-          .each(function(d){
-            const t = d3.select(this);
-            const name = shortenToFit(d.name, 20); // safer truncation for this box width
-            t.append("tspan")
-              .attr("x", padX)
-              .attr("dy", 0)
-              .text(name);
+          .style("font-size","12px")
+          .text(abbr);
+      });
 
-            t.append("tspan")
-              .attr("x", padX)
-              .attr("dy", 18)
-              .style("font-weight", 900)
-              .text(d.abbr);
-          });
+      // Index lookups
+      statesData.forEach(d => metaByAbbr.set(d.meta.abbr, d.meta));
+      groups.each(function(d){ stateSelByAbbr.set(d.meta.abbr, d3.select(this)); });
 
-        callouts.each(function(d){
-          calloutSelByAbbr.set(d.abbr, d3.select(this));
+      // AK/HI inset positions (bottom-left outside mainland)
+      function moveStateInset(abbr, targetX, targetY, scale=1){
+        const sel = stateSelByAbbr.get(abbr);
+        if (!sel) return;
+
+        const node = sel.node();
+        const bbox = node.getBBox();
+        const cx = bbox.x + bbox.width/2;
+        const cy = bbox.y + bbox.height/2;
+
+        sel.attr("transform", `translate(${targetX - cx},${targetY - cy}) scale(${scale})`);
+      }
+      moveStateInset("AK", 165, 520, 0.92);
+      moveStateInset("HI", 355, 525, 1.00);
+
+      // Callouts: more spacing + larger boxes
+      const tinyFeatures = statesData
+        .filter(d => TINY.has(d.meta.abbr))
+        .map(d => {
+          const c = path.centroid(d);
+          return { abbr: d.meta.abbr, name: d.meta.name, cx: c[0], cy: c[1] };
+        })
+        .sort((a,b) => a.cy - b.cy);
+
+      const anchorX = 1035;
+      const minY = 85, maxY = 505;
+      const step = 52;
+
+      let lastY = -Infinity;
+      tinyFeatures.forEach(t => {
+        let y = Math.max(minY, Math.min(maxY, t.cy));
+        if (y < lastY + step) y = lastY + step;
+        lastY = y;
+        t.ay = y;
+        t.ax = anchorX;
+      });
+
+      calloutLayer.selectAll("path.callout-line")
+        .data(tinyFeatures)
+        .join("path")
+        .attr("class","callout-line")
+        .attr("d", d => {
+          const midX = 965;
+          return `M ${d.cx} ${d.cy} L ${midX} ${d.cy} L ${midX} ${d.ay} L ${d.ax - 20} ${d.ay}`;
         });
 
-        setStatus("Click a state");
-      } catch (err){
-        console.error(err);
-        showError(
-          "This page needs internet access to load map data (us-atlas) and D3.\n" +
-          "If you’re offline, reopen when connected."
-        );
-      }
+      const boxW = 190, boxH = 44, padX = 14;
+
+      const callouts = calloutLayer.selectAll("g.callout-card")
+        .data(tinyFeatures)
+        .join("g")
+        .attr("class","callout-card")
+        .attr("data-abbr", d => d.abbr)
+        .attr("transform", d => `translate(${d.ax},${d.ay})`)
+        .on("mouseenter", function(){ raiseToTop(this); })
+        .on("click", function(event, d){ toggleState(d.abbr); });
+
+      callouts.append("rect")
+        .attr("class","callout-front")
+        .attr("x", 0)
+        .attr("y", -boxH/2)
+        .attr("width", boxW)
+        .attr("height", boxH)
+        .attr("rx", 10).attr("ry", 10);
+
+      callouts.append("rect")
+        .attr("class","callout-back")
+        .attr("x", 0)
+        .attr("y", -boxH/2)
+        .attr("width", boxW)
+        .attr("height", boxH)
+        .attr("rx", 10).attr("ry", 10);
+
+      // Front text invisible (blank before clicking)
+      callouts.append("text")
+        .attr("class","callout-text-front")
+        .attr("x", boxW/2)
+        .attr("y", 0)
+        .attr("text-anchor","middle")
+        .attr("dominant-baseline","central")
+        .text("");
+
+      // Back text: Name then initials (no parentheses)
+      callouts.append("text")
+        .attr("class","callout-text-back")
+        .attr("x", padX)
+        .attr("y", -6)
+        .attr("text-anchor","start")
+        .attr("dominant-baseline","central")
+        .each(function(d){
+          const t = d3.select(this);
+          const name = shortenToFit(d.name, 20);
+          t.append("tspan")
+            .attr("x", padX)
+            .attr("dy", 0)
+            .text(name);
+
+          t.append("tspan")
+            .attr("x", padX)
+            .attr("dy", 18)
+            .style("font-weight", 900)
+            .text(d.abbr);
+        });
+
+      callouts.each(function(d){
+        calloutSelByAbbr.set(d.abbr, d3.select(this));
+      });
     }
 
-    document.getElementById("resetBtn").addEventListener("click", resetAll);
-
-    document.getElementById("randomBtn").addEventListener("click", () => {
-      if (!statesData.length) return;
-      const pick = statesData[Math.floor(Math.random() * statesData.length)].meta.abbr;
-      toggleState(pick, true);
+    init().catch(err => {
+      // If offline, map may not load. Keep silent (map-only UI).
+      console.error(err);
     });
-
-    init();
   </script>
 </body>
 </html>
