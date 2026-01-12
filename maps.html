@@ -9,13 +9,22 @@
       --bg:#0b1020;
       --panel:rgba(255,255,255,0.06);
       --stroke:rgba(255,255,255,0.35);
+
       --front:rgba(255,255,255,0.10);
       --frontHover:rgba(255,255,255,0.18);
       --back:rgba(255,255,255,0.16);
+
+      --selectedFront: rgba(120, 230, 170, 0.24);
+      --selectedBack:  rgba(120, 230, 170, 0.30);
+      --selectedStroke: rgba(160, 255, 210, 0.70);
+
       --text:rgba(255,255,255,0.92);
       --muted:rgba(255,255,255,0.70);
-      --lens:rgba(255,255,255,0.10);
-      --lensStroke:rgba(255,255,255,0.30);
+
+      --callLine: rgba(255,255,255,0.42);
+      --callBoxFront: rgba(255,255,255,0.10);
+      --callBoxBack: rgba(255,255,255,0.18);
+      --callBoxStroke: rgba(255,255,255,0.35);
     }
 
     body{
@@ -28,7 +37,7 @@
       place-items:center;
     }
 
-    .wrap{ width:min(1100px, 96vw); padding:18px 14px 24px; }
+    .wrap{ width:min(1180px, 96vw); padding:18px 14px 24px; }
 
     .header{
       display:flex;
@@ -89,17 +98,19 @@
 
     svg{ width:100%; height:auto; display:block; }
 
-    /* --- State "flashcards" (no 3D rotate, so text never mirrors) --- */
-    .state-card{ cursor:pointer; }
+    /* --- State "flashcards" (no 3D rotate so text never mirrors) --- */
+    .state-card{ cursor:pointer; transform-box: fill-box; transform-origin: center; }
+
     .state-card .front-shape,
     .state-card .back-shape{
       stroke:var(--stroke);
-      stroke-width:0.8;
+      stroke-width:0.85;
       vector-effect:non-scaling-stroke;
+      transition: fill 220ms ease, stroke 220ms ease, opacity 180ms ease, filter 220ms ease;
     }
+
     .state-card .front-shape{
       fill:var(--front);
-      transition:fill 200ms ease, opacity 180ms ease;
       opacity:1;
     }
     .state-card:hover .front-shape{ fill:var(--frontHover); }
@@ -107,7 +118,6 @@
     .state-card .back-shape{
       fill:var(--back);
       opacity:0;
-      transition:opacity 180ms ease;
     }
 
     .state-card .label,
@@ -133,39 +143,65 @@
     .state-card.flipped .label,
     .state-card.flipped .sub{ opacity:1; }
 
-    /* --- Northeast Lens (zoom whole region) --- */
-    .lens-rect{
-      fill:var(--lens);
-      stroke:var(--lensStroke);
-      stroke-width:1.2;
-      vector-effect:non-scaling-stroke;
-      rx:10;
-      ry:10;
-      cursor:zoom-in;
-    }
-    .lens-label{
-      font-size:12px;
-      font-weight:700;
-      fill:rgba(255,255,255,0.78);
-      paint-order:stroke;
-      stroke:rgba(0,0,0,0.45);
-      stroke-width:2.0;
-      pointer-events:none;
-      user-select:none;
+    /* Selected color + subtle glow */
+    .state-card.selected .front-shape{ fill: var(--selectedFront); stroke: var(--selectedStroke); }
+    .state-card.selected .back-shape{ fill:  var(--selectedBack);  stroke: var(--selectedStroke); }
+    .state-card.selected .front-shape,
+    .state-card.selected .back-shape{
+      filter: drop-shadow(0 10px 16px rgba(0,0,0,0.35));
     }
 
-    .tinyHelp{
-      position:absolute;
-      right:12px;
-      bottom:12px;
-      font-size:12px;
-      color:rgba(255,255,255,0.78);
-      background:rgba(0,0,0,0.25);
-      border:1px solid rgba(255,255,255,0.14);
-      border-radius:12px;
-      padding:8px 10px;
-      user-select:none;
-      pointer-events:none;
+    /* Click animation */
+    @keyframes pop {
+      0%   { transform: scale(1); }
+      45%  { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    .state-card.popped{ animation: pop 260ms ease-out; }
+
+    /* --- Callouts for tiny states --- */
+    .callout-line{
+      stroke: var(--callLine);
+      stroke-width: 1.2;
+      vector-effect: non-scaling-stroke;
+      fill: none;
+    }
+
+    .callout-card{ cursor: pointer; transform-box: fill-box; transform-origin: center; }
+    .callout-front, .callout-back{
+      stroke: var(--callBoxStroke);
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+      rx: 6; ry: 6;
+      transition: opacity 180ms ease, fill 220ms ease, stroke 220ms ease;
+    }
+    .callout-front{ fill: var(--callBoxFront); opacity: 1; }
+    .callout-back { fill: var(--callBoxBack);  opacity: 0; }
+
+    .callout-text-front,
+    .callout-text-back{
+      font-weight: 800;
+      fill: rgba(255,255,255,0.92);
+      paint-order: stroke;
+      stroke: rgba(0,0,0,0.55);
+      stroke-width: 2.2;
+      pointer-events: none;
+      user-select: none;
+      transition: opacity 180ms ease;
+    }
+    .callout-text-front{ opacity: 1; font-size: 12px; }
+    .callout-text-back { opacity: 0; font-size: 12px; }
+
+    .callout-card.flipped .callout-front{ opacity: 0; }
+    .callout-card.flipped .callout-back { opacity: 1; }
+    .callout-card.flipped .callout-text-front{ opacity: 0; }
+    .callout-card.flipped .callout-text-back { opacity: 1; }
+
+    .callout-card.selected .callout-front,
+    .callout-card.selected .callout-back{
+      fill: var(--selectedBack);
+      stroke: var(--selectedStroke);
+      filter: drop-shadow(0 10px 14px rgba(0,0,0,0.35));
     }
 
     .error{
@@ -186,20 +222,20 @@
         <h1>US States Flashcard Map</h1>
         <p class="hint">
           Click a state to reveal its <b>name</b> + <b>abbreviation</b>.<br/>
-          Hover the <b>Northeast Zoom</b> box to enlarge the tiny states.
+          Tiny states: click the <b>callout squares</b> on the right.
         </p>
       </div>
 
       <div class="controls card">
-        <button id="resetBtn" type="button">Reset (unflip all)</button>
+        <button id="resetBtn" type="button">Reset</button>
         <button id="randomBtn" type="button">Random state</button>
         <div class="status" id="status">Loading map…</div>
       </div>
     </div>
 
     <div class="mapFrame">
-      <svg id="map" viewBox="0 0 1000 620" aria-label="Map of the United States showing states as flip cards" role="img"></svg>
-      <div class="tinyHelp">Tip: hover “Northeast Zoom” to magnify the tiny states 🔍</div>
+      <!-- Wider viewBox to create “outside of map” space for callouts -->
+      <svg id="map" viewBox="0 0 1100 620" aria-label="Map of the United States showing states as flip cards" role="img"></svg>
     </div>
 
     <div class="error" id="errorBox"></div>
@@ -237,12 +273,18 @@
       "56": { name: "Wyoming", abbr: "WY" }
     };
 
+    // Tiny / hard-to-click states -> callouts with lines and squares
+    const TINY_ABBR = ["DC","RI","DE","CT","NJ","MA","MD","VT","NH"]; // ordered roughly south->north-ish
+    const TINY = new Set(TINY_ABBR);
+
     const statusEl = document.getElementById("status");
     const errorBox = document.getElementById("errorBox");
     const svg = d3.select("#map");
 
     let statesData = [];
-    let stateGroups = [];
+    let stateByAbbr = new Map();
+    let stateSelByAbbr = new Map();
+    let calloutSelByAbbr = new Map();
 
     function setStatus(msg){ statusEl.textContent = msg; }
     function showError(msg){
@@ -250,8 +292,46 @@
       errorBox.textContent = msg;
       setStatus("Couldn’t load map");
     }
-
     function raiseToTop(el){ el.parentNode.appendChild(el); }
+
+    function popSelection(sel){
+      sel.classed("popped", true);
+      // Remove class after animation ends
+      setTimeout(() => sel.classed("popped", false), 280);
+    }
+
+    function toggleState(abbr, forceFlip = null){
+      const s = stateSelByAbbr.get(abbr);
+      if (!s) return;
+
+      const isFlipped = s.classed("flipped");
+      const willFlip = (forceFlip === null) ? !isFlipped : !!forceFlip;
+
+      s.classed("flipped", willFlip);
+      s.classed("selected", true);
+      popSelection(s);
+
+      // Keep callout in sync if it exists
+      const c = calloutSelByAbbr.get(abbr);
+      if (c){
+        c.classed("flipped", willFlip);
+        c.classed("selected", true);
+        popSelection(c);
+      }
+
+      const meta = stateByAbbr.get(abbr);
+      setStatus(willFlip ? `✅ ${meta.name} (${abbr})` : "Click a state");
+    }
+
+    function resetAll(){
+      for (const [abbr, s] of stateSelByAbbr.entries()){
+        s.classed("flipped", false).classed("selected", false);
+      }
+      for (const [abbr, c] of calloutSelByAbbr.entries()){
+        c.classed("flipped", false).classed("selected", false);
+      }
+      setStatus("Click a state");
+    }
 
     async function init(){
       try{
@@ -267,27 +347,25 @@
           })
           .filter(f => f.meta);
 
+        // Layout: leave room on right for callouts (outside map)
         const projection = d3.geoAlbersUsa();
-        projection.fitExtent([[20,20],[980,600]], { type:"FeatureCollection", features: statesData });
+        projection.fitExtent([[20,20],[900,600]], { type:"FeatureCollection", features: statesData });
         const path = d3.geoPath(projection);
 
         const root = svg.append("g").attr("id","root");
-
-        // --- Main states layer ---
         const statesLayer = root.append("g").attr("id","statesLayer");
+        const calloutLayer = root.append("g").attr("id","calloutLayer");
 
+        // Draw state groups
         const groups = statesLayer.selectAll("g.state-card")
           .data(statesData)
           .join("g")
           .attr("class","state-card")
-          .attr("data-name", d => d.meta.name)
           .attr("data-abbr", d => d.meta.abbr)
           .on("mouseenter", function(){ raiseToTop(this); })
           .on("click", function(event, d){
-            const node = d3.select(this);
-            const isFlipped = node.classed("flipped");
-            node.classed("flipped", !isFlipped);
-            setStatus(!isFlipped ? `✅ ${d.meta.name} (${d.meta.abbr})` : "Click a state");
+            const abbr = d.meta.abbr;
+            toggleState(abbr);
           });
 
         groups.append("path")
@@ -298,6 +376,7 @@
           .attr("class","back-shape")
           .attr("d", d => path(d));
 
+        // Labels on the back side
         groups.each(function(d){
           const [cx, cy] = path.centroid(d);
           const name = d.meta.name;
@@ -327,116 +406,145 @@
             .text("(" + abbr + ")");
         });
 
-        // --- Reposition AK and HI manually ---
-        // We translate the entire group to desired locations:
-        // Alaska: top-left; Hawaii: middle-left.
-        function moveState(abbr, targetX, targetY, scale=1){
-          const sel = groups.filter(d => d.meta.abbr === abbr);
-          if (sel.empty()) return;
+        // Index for quick access
+        statesData.forEach(d => stateByAbbr.set(d.meta.abbr, d.meta));
+        groups.each(function(d){
+          stateSelByAbbr.set(d.meta.abbr, d3.select(this));
+        });
 
-          // Get current bbox in screen coords
+        // --- Put Alaska + Hawaii in standard inset positions (bottom-left outside mainland area) ---
+        // NOTE: geoAlbersUsa already places AK/HI as insets; we just relocate them further down-left.
+        function moveStateInset(abbr, targetX, targetY, scale=1){
+          const sel = stateSelByAbbr.get(abbr);
+          if (!sel) return;
+
           const node = sel.node();
           const bbox = node.getBBox();
           const cx = bbox.x + bbox.width/2;
           const cy = bbox.y + bbox.height/2;
 
-          // Translate from current center to target point
           const dx = targetX - cx;
           const dy = targetY - cy;
 
+          // Preserve any existing transform by replacing with our inset transform
           sel.attr("transform", `translate(${dx},${dy}) scale(${scale})`);
         }
 
-        // These coordinates are within the SVG viewBox (1000 x 620).
-        // You can tweak target positions if you want them slightly different.
-        moveState("AK", 150, 110, 1); // top-left
-        moveState("HI", 160, 310, 1); // middle-left
+        // These positions are in the “empty” bottom-left area.
+        // Tweak if you want them a bit higher/lower.
+        moveStateInset("AK", 150, 520, 0.92);
+        moveStateInset("HI", 320, 525, 1.00);
 
-        // --- Northeast "lens" zoom ---
-        // We'll define a rectangle covering the northeast cluster in the original map,
-        // and on hover we temporarily scale up the states layer around a focus point.
-        // This enlarges all tiny states together so you can click them easily.
-        //
-        // Lens rectangle (adjustable if you want more/less area):
-        const lens = { x: 735, y: 120, w: 230, h: 200 };
+        // --- Callouts for tiny states: leader lines + clickable squares outside the map ---
+        // Determine centroids for those states
+        const tinyFeatures = statesData
+          .filter(d => TINY.has(d.meta.abbr))
+          .map(d => {
+            const c = path.centroid(d);
+            return { abbr: d.meta.abbr, name: d.meta.name, cx: c[0], cy: c[1] };
+          })
+          .sort((a,b) => a.cy - b.cy);
 
-        // Create lens overlay rectangle + label on top
-        const lensLayer = root.append("g").attr("id","lensLayer");
+        // Create nicely spaced anchor Y positions (avoid overlapping)
+        const anchorX = 1015; // outside map (right side)
+        const minY = 90, maxY = 420;
+        const step = 30;
 
-        lensLayer.append("rect")
-          .attr("class","lens-rect")
-          .attr("x", lens.x)
-          .attr("y", lens.y)
-          .attr("width", lens.w)
-          .attr("height", lens.h);
+        // Start from projected Y but enforce spacing
+        let lastY = -Infinity;
+        tinyFeatures.forEach((t, i) => {
+          let y = Math.max(minY, Math.min(maxY, t.cy));
+          if (y < lastY + step) y = lastY + step;
+          lastY = y;
+          t.ay = y;
+          t.ax = anchorX;
+        });
 
-        lensLayer.append("text")
-          .attr("class","lens-label")
-          .attr("x", lens.x + 12)
-          .attr("y", lens.y + 20)
-          .text("Northeast Zoom");
+        // Leader lines
+        calloutLayer.selectAll("path.callout-line")
+          .data(tinyFeatures)
+          .join("path")
+          .attr("class","callout-line")
+          .attr("d", d => {
+            const midX = 935; // elbow point near map edge
+            // polyline-like path: centroid -> midX -> anchor
+            return `M ${d.cx} ${d.cy} L ${midX} ${d.cy} L ${midX} ${d.ay} L ${d.ax - 18} ${d.ay}`;
+          });
 
-        // Zoom behavior: scale statesLayer around a focus point (center of lens)
-        const focusX = lens.x + lens.w/2;
-        const focusY = lens.y + lens.h/2;
-        const zoomScale = 2.35;
+        // Callout squares (mini flip cards)
+        const boxW = 72, boxH = 26;
 
-        function applyZoom(on){
-          // Transform around focus:
-          // T(focus) * S(scale) * T(-focus)
-          if (on){
-            statesLayer
-              .transition()
-              .duration(180)
-              .attr("transform", `translate(${focusX},${focusY}) scale(${zoomScale}) translate(${-focusX},${-focusY})`);
-            setStatus("Zoomed Northeast — click tiny states!");
-          } else {
-            statesLayer
-              .transition()
-              .duration(180)
-              .attr("transform", null);
-            setStatus("Click a state");
-          }
-        }
+        const callouts = calloutLayer.selectAll("g.callout-card")
+          .data(tinyFeatures)
+          .join("g")
+          .attr("class","callout-card")
+          .attr("data-abbr", d => d.abbr)
+          .attr("transform", d => `translate(${d.ax},${d.ay})`)
+          .on("mouseenter", function(){ raiseToTop(this); })
+          .on("click", function(event, d){
+            toggleState(d.abbr);
+          });
 
-        // Trigger zoom when hovering lens area
-        lensLayer
-          .on("mouseenter", () => applyZoom(true))
-          .on("mouseleave", () => applyZoom(false));
+        // front rect
+        callouts.append("rect")
+          .attr("class","callout-front")
+          .attr("x", 0)
+          .attr("y", -boxH/2)
+          .attr("width", boxW)
+          .attr("height", boxH)
+          .attr("rx", 7).attr("ry", 7);
 
-        stateGroups = groups.nodes().map(n => d3.select(n));
+        // back rect
+        callouts.append("rect")
+          .attr("class","callout-back")
+          .attr("x", 0)
+          .attr("y", -boxH/2)
+          .attr("width", boxW)
+          .attr("height", boxH)
+          .attr("rx", 7).attr("ry", 7);
+
+        // front text: abbreviation
+        callouts.append("text")
+          .attr("class","callout-text-front")
+          .attr("x", boxW/2)
+          .attr("y", 0)
+          .attr("text-anchor","middle")
+          .attr("dominant-baseline","central")
+          .text(d => d.abbr);
+
+        // back text: name (shorten if needed) + abbr
+        callouts.append("text")
+          .attr("class","callout-text-back")
+          .attr("x", 6)
+          .attr("y", 0)
+          .attr("text-anchor","start")
+          .attr("dominant-baseline","central")
+          .text(d => {
+            const label = d.name.length > 12 ? d.name.slice(0, 11) + "…" : d.name;
+            return `${label} (${d.abbr})`;
+          });
+
+        // Save callout selections for reset + sync
+        callouts.each(function(d){
+          calloutSelByAbbr.set(d.abbr, d3.select(this));
+        });
 
         setStatus("Click a state");
       } catch (err){
         console.error(err);
         showError(
-          "This page needs internet access to load the map data (us-atlas) and D3.\n" +
+          "This page needs internet access to load map data (us-atlas) and D3.\n" +
           "If you’re offline, reopen when connected."
         );
       }
     }
 
-    // Controls
-    document.getElementById("resetBtn").addEventListener("click", () => {
-      stateGroups.forEach(s => s.classed("flipped", false));
-      setStatus("Click a state");
-    });
+    document.getElementById("resetBtn").addEventListener("click", resetAll);
 
     document.getElementById("randomBtn").addEventListener("click", () => {
       if (!statesData.length) return;
-      const pick = statesData[Math.floor(Math.random() * statesData.length)];
-      const abbr = pick.meta.abbr;
-
-      const node = d3.selectAll("g.state-card")
-        .filter(d => d.meta && d.meta.abbr === abbr)
-        .node();
-
-      if (node){
-        raiseToTop(node);
-        const sel = d3.select(node);
-        sel.classed("flipped", true);
-        setStatus(`🎯 ${pick.meta.name} (${abbr})`);
-      }
+      const pick = statesData[Math.floor(Math.random() * statesData.length)].meta.abbr;
+      toggleState(pick, true);
     });
 
     init();
