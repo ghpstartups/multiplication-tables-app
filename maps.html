@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>US States Flip Map</title>
+  <title>US States Flip Map (50 States)</title>
   <style>
     :root{
       --bg:#0b1020;
@@ -98,7 +98,7 @@
 
     svg{ width:100%; height:auto; display:block; }
 
-    /* --- State cards (no 3D rotate so text never mirrors) --- */
+    /* --- State cards --- */
     .state-card{ cursor:pointer; transform-box: fill-box; transform-origin: center; }
 
     .state-card .front-shape,
@@ -111,7 +111,6 @@
 
     .state-card .front-shape{ fill:var(--front); opacity:1; }
     .state-card:hover .front-shape{ fill:var(--frontHover); }
-
     .state-card .back-shape{ fill:var(--back); opacity:0; }
 
     .state-card .label,
@@ -127,7 +126,7 @@
       transition:opacity 180ms ease;
     }
     .state-card .sub{
-      font-weight:700;
+      font-weight:900;
       stroke-width:2.0;
       fill:rgba(255,255,255,0.86);
     }
@@ -137,23 +136,17 @@
     .state-card.flipped .label,
     .state-card.flipped .sub{ opacity:1; }
 
-    /* Selected color + subtle glow */
     .state-card.selected .front-shape{ fill: var(--selectedFront); stroke: var(--selectedStroke); }
-    .state-card.selected .back-shape{ fill:  var(--selectedBack);  stroke: var(--selectedStroke); }
+    .state-card.selected .back-shape{  fill: var(--selectedBack);  stroke: var(--selectedStroke); }
     .state-card.selected .front-shape,
     .state-card.selected .back-shape{
       filter: drop-shadow(0 10px 16px rgba(0,0,0,0.35));
     }
 
-    /* Click animation */
-    @keyframes pop {
-      0%   { transform: scale(1); }
-      45%  { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
+    @keyframes pop { 0%{transform:scale(1)} 45%{transform:scale(1.05)} 100%{transform:scale(1)} }
     .state-card.popped{ animation: pop 260ms ease-out; }
 
-    /* --- Callouts for tiny states --- */
+    /* --- Callouts --- */
     .callout-line{
       stroke: var(--callLine);
       stroke-width: 1.2;
@@ -161,7 +154,8 @@
       fill: none;
     }
 
-    .callout-card{ cursor: pointer; transform-box: fill-box; transform-origin: center; }
+    .callout-card{ cursor:pointer; transform-box: fill-box; transform-origin: center; }
+
     .callout-front, .callout-back{
       stroke: var(--callBoxStroke);
       stroke-width: 1;
@@ -171,14 +165,7 @@
     .callout-front{ fill: var(--callBoxFront); opacity: 1; }
     .callout-back { fill: var(--callBoxBack);  opacity: 0; }
 
-    /* Front shows NOTHING before clicking */
-    .callout-text-front{
-      opacity: 0;
-      pointer-events: none;
-      user-select: none;
-    }
-
-    /* Back shows Name + Initials (no parentheses) */
+    .callout-text-front{ opacity:0; pointer-events:none; user-select:none; }
     .callout-text-back{
       font-weight: 800;
       fill: rgba(255,255,255,0.92);
@@ -220,7 +207,7 @@
         <h1>US States Flashcard Map</h1>
         <p class="hint">
           Click a state to reveal its <b>name</b> + <b>initials</b>.<br/>
-          Tiny states: click the blank <b>callout squares</b> on the right.
+          Tiny states: click the blank <b>callout boxes</b> on the right.
         </p>
       </div>
 
@@ -232,7 +219,7 @@
     </div>
 
     <div class="mapFrame">
-      <svg id="map" viewBox="0 0 1100 620" aria-label="Map of the United States showing states as flip cards" role="img"></svg>
+      <svg id="map" viewBox="0 0 1200 620" aria-label="Map of the United States showing states as flip cards" role="img"></svg>
     </div>
 
     <div class="error" id="errorBox"></div>
@@ -241,37 +228,37 @@
   <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
   <script>
+    // 50 states only (NO DC)
     const FIPS = {
       "01": { name: "Alabama", abbr: "AL" }, "02": { name: "Alaska", abbr: "AK" },
       "04": { name: "Arizona", abbr: "AZ" }, "05": { name: "Arkansas", abbr: "AR" },
       "06": { name: "California", abbr: "CA" }, "08": { name: "Colorado", abbr: "CO" },
       "09": { name: "Connecticut", abbr: "CT" }, "10": { name: "Delaware", abbr: "DE" },
-      "11": { name: "District of Columbia", abbr: "DC" }, "12": { name: "Florida", abbr: "FL" },
-      "13": { name: "Georgia", abbr: "GA" }, "15": { name: "Hawaii", abbr: "HI" },
-      "16": { name: "Idaho", abbr: "ID" }, "17": { name: "Illinois", abbr: "IL" },
-      "18": { name: "Indiana", abbr: "IN" }, "19": { name: "Iowa", abbr: "IA" },
-      "20": { name: "Kansas", abbr: "KS" }, "21": { name: "Kentucky", abbr: "KY" },
-      "22": { name: "Louisiana", abbr: "LA" }, "23": { name: "Maine", abbr: "ME" },
-      "24": { name: "Maryland", abbr: "MD" }, "25": { name: "Massachusetts", abbr: "MA" },
-      "26": { name: "Michigan", abbr: "MI" }, "27": { name: "Minnesota", abbr: "MN" },
-      "28": { name: "Mississippi", abbr: "MS" }, "29": { name: "Missouri", abbr: "MO" },
-      "30": { name: "Montana", abbr: "MT" }, "31": { name: "Nebraska", abbr: "NE" },
-      "32": { name: "Nevada", abbr: "NV" }, "33": { name: "New Hampshire", abbr: "NH" },
-      "34": { name: "New Jersey", abbr: "NJ" }, "35": { name: "New Mexico", abbr: "NM" },
-      "36": { name: "New York", abbr: "NY" }, "37": { name: "North Carolina", abbr: "NC" },
-      "38": { name: "North Dakota", abbr: "ND" }, "39": { name: "Ohio", abbr: "OH" },
-      "40": { name: "Oklahoma", abbr: "OK" }, "41": { name: "Oregon", abbr: "OR" },
-      "42": { name: "Pennsylvania", abbr: "PA" }, "44": { name: "Rhode Island", abbr: "RI" },
-      "45": { name: "South Carolina", abbr: "SC" }, "46": { name: "South Dakota", abbr: "SD" },
-      "47": { name: "Tennessee", abbr: "TN" }, "48": { name: "Texas", abbr: "TX" },
-      "49": { name: "Utah", abbr: "UT" }, "50": { name: "Vermont", abbr: "VT" },
-      "51": { name: "Virginia", abbr: "VA" }, "53": { name: "Washington", abbr: "WA" },
-      "54": { name: "West Virginia", abbr: "WV" }, "55": { name: "Wisconsin", abbr: "WI" },
-      "56": { name: "Wyoming", abbr: "WY" }
+      "12": { name: "Florida", abbr: "FL" }, "13": { name: "Georgia", abbr: "GA" },
+      "15": { name: "Hawaii", abbr: "HI" }, "16": { name: "Idaho", abbr: "ID" },
+      "17": { name: "Illinois", abbr: "IL" }, "18": { name: "Indiana", abbr: "IN" },
+      "19": { name: "Iowa", abbr: "IA" }, "20": { name: "Kansas", abbr: "KS" },
+      "21": { name: "Kentucky", abbr: "KY" }, "22": { name: "Louisiana", abbr: "LA" },
+      "23": { name: "Maine", abbr: "ME" }, "24": { name: "Maryland", abbr: "MD" },
+      "25": { name: "Massachusetts", abbr: "MA" }, "26": { name: "Michigan", abbr: "MI" },
+      "27": { name: "Minnesota", abbr: "MN" }, "28": { name: "Mississippi", abbr: "MS" },
+      "29": { name: "Missouri", abbr: "MO" }, "30": { name: "Montana", abbr: "MT" },
+      "31": { name: "Nebraska", abbr: "NE" }, "32": { name: "Nevada", abbr: "NV" },
+      "33": { name: "New Hampshire", abbr: "NH" }, "34": { name: "New Jersey", abbr: "NJ" },
+      "35": { name: "New Mexico", abbr: "NM" }, "36": { name: "New York", abbr: "NY" },
+      "37": { name: "North Carolina", abbr: "NC" }, "38": { name: "North Dakota", abbr: "ND" },
+      "39": { name: "Ohio", abbr: "OH" }, "40": { name: "Oklahoma", abbr: "OK" },
+      "41": { name: "Oregon", abbr: "OR" }, "42": { name: "Pennsylvania", abbr: "PA" },
+      "44": { name: "Rhode Island", abbr: "RI" }, "45": { name: "South Carolina", abbr: "SC" },
+      "46": { name: "South Dakota", abbr: "SD" }, "47": { name: "Tennessee", abbr: "TN" },
+      "48": { name: "Texas", abbr: "TX" }, "49": { name: "Utah", abbr: "UT" },
+      "50": { name: "Vermont", abbr: "VT" }, "51": { name: "Virginia", abbr: "VA" },
+      "53": { name: "Washington", abbr: "WA" }, "54": { name: "West Virginia", abbr: "WV" },
+      "55": { name: "Wisconsin", abbr: "WI" }, "56": { name: "Wyoming", abbr: "WY" }
     };
 
-    // Tiny / hard-to-click states -> use callouts ONLY for labels
-    const TINY_ABBR = ["DC","RI","DE","CT","NJ","MA","MD","VT","NH"];
+    // Tiny states callouts (50 states only)
+    const TINY_ABBR = ["RI","DE","CT","NJ","MA","MD","VT","NH"];
     const TINY = new Set(TINY_ABBR);
 
     const statusEl = document.getElementById("status");
@@ -290,13 +277,11 @@
       setStatus("Couldn’t load map");
     }
     function raiseToTop(el){ el.parentNode.appendChild(el); }
-
     function popSelection(sel){
       sel.classed("popped", true);
       setTimeout(() => sel.classed("popped", false), 280);
     }
 
-    // Toggle ON/OFF so clicking again fully resets the state
     function toggleState(abbr, forceOn = null){
       const s = stateSelByAbbr.get(abbr);
       if (!s) return;
@@ -304,22 +289,12 @@
       const isOn = s.classed("selected") || s.classed("flipped");
       const nextOn = (forceOn === null) ? !isOn : !!forceOn;
 
-      // For tiny states: never show labels on the state itself.
-      // We still color-highlight the state for feedback.
       const showStateText = !TINY.has(abbr);
 
       s.classed("selected", nextOn);
-
-      if (showStateText) {
-        s.classed("flipped", nextOn);
-      } else {
-        // ensure no state text appears
-        s.classed("flipped", false);
-      }
-
+      s.classed("flipped", showStateText ? nextOn : false);
       popSelection(s);
 
-      // Sync callout if present
       const c = calloutSelByAbbr.get(abbr);
       if (c){
         c.classed("selected", nextOn);
@@ -332,13 +307,17 @@
     }
 
     function resetAll(){
-      for (const [abbr, s] of stateSelByAbbr.entries()){
+      for (const [, s] of stateSelByAbbr.entries()){
         s.classed("flipped", false).classed("selected", false);
       }
-      for (const [abbr, c] of calloutSelByAbbr.entries()){
+      for (const [, c] of calloutSelByAbbr.entries()){
         c.classed("flipped", false).classed("selected", false);
       }
       setStatus("Click a state");
+    }
+
+    function shortenToFit(name, maxChars){
+      return name.length > maxChars ? name.slice(0, maxChars - 1) + "…" : name;
     }
 
     async function init(){
@@ -348,6 +327,7 @@
         const topo = await d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json");
         const states = topojson.feature(topo, topo.objects.states).features;
 
+        // Keep only the 50 states we have in FIPS map above
         statesData = states
           .map(f => {
             const id2 = String(f.id).padStart(2,"0");
@@ -355,9 +335,9 @@
           })
           .filter(f => f.meta);
 
-        // Layout: leave room on right for callouts
+        // Leave room on right for callouts
         const projection = d3.geoAlbersUsa();
-        projection.fitExtent([[20,20],[900,600]], { type:"FeatureCollection", features: statesData });
+        projection.fitExtent([[20,20],[930,600]], { type:"FeatureCollection", features: statesData });
         const path = d3.geoPath(projection);
 
         const root = svg.append("g").attr("id","root");
@@ -383,10 +363,10 @@
           .attr("class","back-shape")
           .attr("d", d => path(d));
 
-        // Labels: ONLY for non-tiny states
+        // Labels only for non-tiny states
         groups.each(function(d){
           const abbr = d.meta.abbr;
-          if (TINY.has(abbr)) return; // no state text at all for tiny states
+          if (TINY.has(abbr)) return;
 
           const [cx, cy] = path.centroid(d);
           const name = d.meta.name;
@@ -412,14 +392,14 @@
             .attr("text-anchor","middle")
             .attr("dominant-baseline","central")
             .style("font-size","12px")
-            .text(abbr); // NO parentheses
+            .text(abbr);
         });
 
         // Index lookups
         statesData.forEach(d => metaByAbbr.set(d.meta.abbr, d.meta));
         groups.each(function(d){ stateSelByAbbr.set(d.meta.abbr, d3.select(this)); });
 
-        // AK/HI: standard inset positions (bottom-left outside mainland)
+        // AK/HI: inset positions (bottom-left outside mainland)
         function moveStateInset(abbr, targetX, targetY, scale=1){
           const sel = stateSelByAbbr.get(abbr);
           if (!sel) return;
@@ -429,15 +409,12 @@
           const cx = bbox.x + bbox.width/2;
           const cy = bbox.y + bbox.height/2;
 
-          const dx = targetX - cx;
-          const dy = targetY - cy;
-
-          sel.attr("transform", `translate(${dx},${dy}) scale(${scale})`);
+          sel.attr("transform", `translate(${targetX - cx},${targetY - cy}) scale(${scale})`);
         }
-        moveStateInset("AK", 150, 520, 0.92);
-        moveStateInset("HI", 320, 525, 1.00);
+        moveStateInset("AK", 165, 520, 0.92);
+        moveStateInset("HI", 355, 525, 1.00);
 
-        // --- Callouts for tiny states: lines + blank squares; reveal Name + Initials on click ---
+        // --- Callouts (more spacing + bigger boxes + safer text) ---
         const tinyFeatures = statesData
           .filter(d => TINY.has(d.meta.abbr))
           .map(d => {
@@ -446,9 +423,9 @@
           })
           .sort((a,b) => a.cy - b.cy);
 
-        const anchorX = 1015;
-        const minY = 90, maxY = 420;
-        const step = 30;
+        const anchorX = 1035;   // further right = more breathing room
+        const minY = 85, maxY = 505;
+        const step = 52;        // bigger spacing so lines/boxes aren't crowded
 
         let lastY = -Infinity;
         tinyFeatures.forEach(t => {
@@ -459,16 +436,19 @@
           t.ax = anchorX;
         });
 
+        // Lines (with an elbow)
         calloutLayer.selectAll("path.callout-line")
           .data(tinyFeatures)
           .join("path")
           .attr("class","callout-line")
           .attr("d", d => {
-            const midX = 935;
-            return `M ${d.cx} ${d.cy} L ${midX} ${d.cy} L ${midX} ${d.ay} L ${d.ax - 18} ${d.ay}`;
+            const midX = 965;  // elbow x near map edge
+            return `M ${d.cx} ${d.cy} L ${midX} ${d.cy} L ${midX} ${d.ay} L ${d.ax - 20} ${d.ay}`;
           });
 
-        const boxW = 120, boxH = 34;
+        const boxW = 190;  // wider so text fits
+        const boxH = 44;   // taller so 2 lines fit with padding
+        const padX = 14;
 
         const callouts = calloutLayer.selectAll("g.callout-card")
           .data(tinyFeatures)
@@ -487,7 +467,7 @@
           .attr("y", -boxH/2)
           .attr("width", boxW)
           .attr("height", boxH)
-          .attr("rx", 8).attr("ry", 8);
+          .attr("rx", 10).attr("ry", 10);
 
         callouts.append("rect")
           .attr("class","callout-back")
@@ -495,9 +475,9 @@
           .attr("y", -boxH/2)
           .attr("width", boxW)
           .attr("height", boxH)
-          .attr("rx", 8).attr("ry", 8);
+          .attr("rx", 10).attr("ry", 10);
 
-        // Front text exists but is invisible (so "nothing before clicking")
+        // Front text exists but invisible (blank before clicking)
         callouts.append("text")
           .attr("class","callout-text-front")
           .attr("x", boxW/2)
@@ -506,27 +486,24 @@
           .attr("dominant-baseline","central")
           .text("");
 
-        // Back text (two lines): Name then Initials (no parentheses)
+        // Back text (2 lines): Name then initials
         callouts.append("text")
           .attr("class","callout-text-back")
-          .attr("x", 10)
-          .attr("y", -2)
+          .attr("x", padX)
+          .attr("y", -6)
           .attr("text-anchor","start")
           .attr("dominant-baseline","central")
           .each(function(d){
             const t = d3.select(this);
-
-            // Slight shortening for very long names
-            const name = d.name.length > 16 ? d.name.slice(0, 15) + "…" : d.name;
-
+            const name = shortenToFit(d.name, 20); // safer truncation for this box width
             t.append("tspan")
-              .attr("x", 10)
+              .attr("x", padX)
               .attr("dy", 0)
               .text(name);
 
             t.append("tspan")
-              .attr("x", 10)
-              .attr("dy", 14)
+              .attr("x", padX)
+              .attr("dy", 18)
               .style("font-weight", 900)
               .text(d.abbr);
           });
